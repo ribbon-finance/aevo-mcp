@@ -6,11 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 RUN python -m pip install --no-cache-dir --upgrade pip setuptools
 
-COPY pyproject.toml ./
-RUN pip install --no-cache-dir .
-
+COPY pyproject.toml README.md ./
 COPY src ./src
-COPY README.md ./README.md
+RUN pip install --no-cache-dir .
 
 EXPOSE 8080
 

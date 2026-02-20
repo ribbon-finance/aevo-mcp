@@ -89,7 +89,7 @@ def test_build_server_registers_tools_and_components(monkeypatch):
     captured = CaptureServer("AEVO Trading")
 
     monkeypatch.setattr(server, "AevoAPIClient", FakeClient)
-    monkeypatch.setattr(server, "FastMCP", lambda name: captured)
+    monkeypatch.setattr(server, "FastMCP", lambda name, **kwargs: captured)
     monkeypatch.setattr(server, "register_market_tools", Mock(return_value=market_tools))
     monkeypatch.setattr(server, "register_account_tools", Mock(return_value=account_tools))
     monkeypatch.setattr(server, "register_order_tools", Mock(return_value=order_tools))

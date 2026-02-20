@@ -31,9 +31,9 @@ def _run_auto_register(config: AevoMcpConfig, register_fn):
     return register_fn()
 
 
-def _build_server(config: AevoMcpConfig) -> tuple[FastMCP, object]:
+def _build_server(config: AevoMcpConfig, host: str = "127.0.0.1", port: int = 8080, path: str = "/mcp") -> tuple[FastMCP, object]:
     client = AevoAPIClient(config)
-    mcp = FastMCP("AEVO Trading")
+    mcp = FastMCP("AEVO Trading", host=host, port=port, streamable_http_path=path)
 
     market_tools = register_market_tools(mcp, client)
     account_tools = register_account_tools(mcp, client, config)
@@ -86,22 +86,17 @@ def main() -> None:
         print(f"Invalid config: {exc}", file=sys.stderr)
         raise SystemExit(1)
 
-    server, register_fn = _build_server(config)
+    transport = (args.transport or config.mcp_transport).lower()
+    host = args.host or config.mcp_host
+    port = args.port or config.mcp_port
+    path = args.path or config.mcp_path
+
+    server, register_fn = _build_server(config, host=host, port=port, path=path)
     auto = _run_auto_register(config, register_fn)
     if auto is not None:
         print(f"[aevo-mcp] auto-register: {json.dumps(auto)}", file=sys.stderr)
 
-    transport = (args.transport or config.mcp_transport).lower()
-    if transport == "stdio":
-        server.run(transport="stdio")
-        return
-
-    server.run(
-        transport=transport,
-        host=(args.host or config.mcp_host),
-        port=(args.port or config.mcp_port),
-        path=(args.path or config.mcp_path),
-    )
+    server.run(transport=transport)
 
 
 if __name__ == "__main__":
