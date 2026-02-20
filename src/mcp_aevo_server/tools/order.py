@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, Dict
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -29,7 +29,7 @@ def _build_order_payload(
     trigger: str = "",
     close_position: bool = False,
     partial_position: bool = False,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     if not config.wallet_address and not config.wallet_private_key:
         raise RuntimeError("AEVO_WALLET_ADDRESS or AEVO_WALLET_PRIVATE_KEY is required")
     if not config.signing_key_private_key:
@@ -68,30 +68,52 @@ def _build_order_payload(
     return payload
 
 
-def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Dict[str, Any]:
+def _pick(d: dict, keys: list[str]) -> dict:
+    return {k: d[k] for k in keys if k in d}
+
+
+ORDER_FIELDS = [
+    "order_id",
+    "instrument_name",
+    "instrument_id",
+    "side",
+    "is_buy",
+    "amount",
+    "filled",
+    "limit_price",
+    "avg_price",
+    "order_type",
+    "status",
+    "created_at",
+]
+
+
+def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> dict[str, Any]:
     def _require_credentials() -> None:
         if not client.has_credentials:
             raise RuntimeError("missing AEVO_API_KEY/AEVO_API_SECRET; call register_account first")
 
     @mcp.tool()
-    def list_orders() -> Dict[str, Any]:
-        """Fetch all current user orders."""
+    def list_orders() -> dict[str, Any]:
+        """Fetch all current user orders. Returns: order_id, instrument_name, side, amount, filled, limit_price, status, created_at."""
         try:
             _require_credentials()
-            return ok_response(client.get_orders())
+            raw = client.get_orders()
+            return ok_response([_pick(o, ORDER_FIELDS) for o in raw] if isinstance(raw, list) else raw)
         except (RuntimeError, AevoApiError) as exc:
             return err_response("failed to fetch orders", str(exc))
         except Exception as exc:
             return err_response("failed to fetch orders", str(exc))
 
     @mcp.tool()
-    def get_order(order_id: str) -> Dict[str, Any]:
-        """Fetch one order by id."""
+    def get_order(order_id: str) -> dict[str, Any]:
+        """Fetch one order by id. Returns: order_id, instrument_name, side, amount, filled, limit_price, status, created_at."""
         if not order_id:
             return err_response("order_id is required")
         try:
             _require_credentials()
-            return ok_response(client.get_order(order_id))
+            raw = client.get_order(order_id)
+            return ok_response(_pick(raw, ORDER_FIELDS) if isinstance(raw, dict) else raw)
         except (RuntimeError, AevoApiError) as exc:
             return err_response("failed to fetch order", str(exc))
         except Exception as exc:
@@ -113,7 +135,7 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
         trigger: str = "",
         close_position: bool = False,
         partial_position: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build and return a signed order payload (no submission). Use human-readable values: amount in contracts (e.g. '0.5'), limit_price in USD (e.g. '67900'). Set stop/trigger for stop-loss or take-profit orders."""
         try:
             payload = _build_order_payload(
@@ -156,7 +178,7 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
         trigger: str = "",
         close_position: bool = False,
         partial_position: bool = False,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Build a signed order payload and submit it. Use human-readable values: amount in contracts (e.g. '0.5'), limit_price in USD (e.g. '67900'). Set stop/trigger for stop-loss or take-profit orders."""
         try:
             _require_credentials()
@@ -185,7 +207,7 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
             return err_response("failed to create order", str(exc))
 
     @mcp.tool()
-    def cancel_order(order_id: str) -> Dict[str, Any]:
+    def cancel_order(order_id: str) -> dict[str, Any]:
         """Cancel one order."""
         if not order_id:
             return err_response("order_id is required")
@@ -198,7 +220,7 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
             return err_response("failed to cancel order", str(exc))
 
     @mcp.tool()
-    def cancel_orders(order_ids: list[str], instrument_type: str = "") -> Dict[str, Any]:
+    def cancel_orders(order_ids: list[str], instrument_type: str = "") -> dict[str, Any]:
         """Cancel many orders in one request."""
         if not order_ids:
             return err_response("order_ids is required")
@@ -211,7 +233,7 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
             return err_response("failed to cancel orders", str(exc))
 
     @mcp.tool()
-    def cancel_all(asset: str = "", instrument_type: str = "") -> Dict[str, Any]:
+    def cancel_all(asset: str = "", instrument_type: str = "") -> dict[str, Any]:
         """Cancel all open orders for the account."""
         try:
             _require_credentials()

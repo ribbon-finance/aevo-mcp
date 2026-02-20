@@ -3,14 +3,13 @@ from __future__ import annotations
 import os
 import sys
 from dataclasses import dataclass
-from typing import Dict
 
 
 class AevoConfigError(ValueError):
     """Raised when required AEVO MCP environment configuration is invalid."""
 
 
-NETWORKS: Dict[str, Dict[str, object]] = {
+NETWORKS: dict[str, dict[str, object]] = {
     "mainnet": {
         "domain": "Aevo Mainnet",
         "chain_id": 1,
@@ -86,9 +85,7 @@ class AevoMcpConfig:
 def load_config() -> AevoMcpConfig:
     environment = ((_env("AEVO_ENVIRONMENT") or _env("AEVO_ENV") or "mainnet") or "mainnet").lower()
     if environment not in NETWORKS:
-        raise AevoConfigError(
-            f"AEVO_ENVIRONMENT (or AEVO_ENV) must be one of: {', '.join(sorted(NETWORKS.keys()))}"
-        )
+        raise AevoConfigError(f"AEVO_ENVIRONMENT (or AEVO_ENV) must be one of: {', '.join(sorted(NETWORKS.keys()))}")
     env_cfg = NETWORKS[environment]
 
     # Warn on deprecated env var names

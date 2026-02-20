@@ -95,7 +95,9 @@ def test_build_server_registers_tools_and_components(monkeypatch):
     monkeypatch.setattr(server, "register_order_tools", Mock(return_value=order_tools))
     monkeypatch.setattr(server, "register_registration_tools", Mock(return_value=registration_tools))
 
-    mock_prompt_reg = Mock(return_value={"trade_plan": Mock(name="trade_plan"), "risk_checklist": Mock(name="risk_checklist")})
+    mock_prompt_reg = Mock(
+        return_value={"trade_plan": Mock(name="trade_plan"), "risk_checklist": Mock(name="risk_checklist")}
+    )
     mock_resource_reg = Mock(return_value={"resource_status": Mock(name="resource_status")})
     monkeypatch.setattr(server, "register_prompts", mock_prompt_reg)
     monkeypatch.setattr(server, "register_market_resources", mock_resource_reg)

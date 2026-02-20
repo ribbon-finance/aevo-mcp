@@ -22,7 +22,7 @@ def test_parse_int_field_from_str():
 def test_parse_int_field_invalid():
     try:
         parse_int_field("abc", "x")
-        assert False, "expected ValueError"
+        raise AssertionError("expected ValueError")
     except ValueError as exc:
         assert "x must be integer-like" in str(exc)
 
@@ -44,6 +44,6 @@ def test_resolve_wallet_address_missing_raises():
     config = SimpleNamespace(wallet_address="", wallet_private_key="")
     try:
         resolve_wallet_address(config)
-        assert False, "expected RuntimeError"
+        raise AssertionError("expected RuntimeError")
     except RuntimeError:
         pass

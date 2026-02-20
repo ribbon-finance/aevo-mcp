@@ -83,10 +83,20 @@ def test_market_tools_register_all_expected_keys():
     mcp = FastMCP("AEVO")
     tools = register_market_tools(mcp, client)
     expected = {
-        "assets", "markets", "orderbook", "instrument",
-        "funding_rate", "funding_history", "trade_history", "statistics",
-        "index_price", "index_history", "mark_history", "settlement_history",
-        "expiries", "server_time",
+        "assets",
+        "markets",
+        "orderbook",
+        "instrument",
+        "funding_rate",
+        "funding_history",
+        "trade_history",
+        "statistics",
+        "index_price",
+        "index_history",
+        "mark_history",
+        "settlement_history",
+        "expiries",
+        "server_time",
     }
     assert set(tools.keys()) == expected
 

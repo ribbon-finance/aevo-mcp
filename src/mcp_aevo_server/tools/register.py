@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Dict
+from typing import Any
 
 from mcp.server.fastmcp import FastMCP
 
@@ -15,7 +15,7 @@ def _max_expiry_value() -> str:
     return str(2**256 - 1)
 
 
-def register_registration_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Dict[str, Any]:
+def register_registration_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> dict[str, Any]:
     def _require_signing_keys() -> None:
         if not config.wallet_private_key:
             raise RuntimeError("AEVO_WALLET_PRIVATE_KEY is required")
@@ -27,7 +27,7 @@ def register_registration_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig
         key_expiry: str = "",
         no_api_key: bool = False,
         referral_code: str = "",
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Register signing key and optionally API credentials."""
         try:
             _require_signing_keys()

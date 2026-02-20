@@ -102,7 +102,10 @@ def test_build_order_with_stop_trigger(mock_sign):
     tools = register_order_tools(mcp, client, config)
 
     result = tools["build_order"](
-        "BTC-USDC", True, "10", "50000",
+        "BTC-USDC",
+        True,
+        "10",
+        "50000",
         stop="STOP_LOSS",
         trigger="49000",
         close_position=True,

@@ -3,9 +3,10 @@ from __future__ import annotations
 import random
 import time
 from decimal import Decimal, InvalidOperation
-from typing import Any, Dict
+from typing import Any
 
 from eth_account import Account
+
 try:
     from eth_account.messages import encode_structured_data
 except Exception:
@@ -114,7 +115,9 @@ def _to_scaled_int(value: str, field_name: str) -> int:
     return result
 
 
-def _typed_data(primary_type: str, types: Dict[str, Any], domain: AevoNetworkConfig, message: Dict[str, Any]) -> Dict[str, Any]:
+def _typed_data(
+    primary_type: str, types: dict[str, Any], domain: AevoNetworkConfig, message: dict[str, Any]
+) -> dict[str, Any]:
     return {
         "types": types,
         "primaryType": primary_type,
@@ -127,7 +130,7 @@ def _typed_data(primary_type: str, types: Dict[str, Any], domain: AevoNetworkCon
     }
 
 
-def _hash_typed_message(typed_data: Dict[str, Any]) -> bytes:
+def _hash_typed_message(typed_data: dict[str, Any]) -> bytes:
     """
     Compute raw EIP-712 hash for Go backend parity.
 
@@ -170,7 +173,7 @@ def _hash_typed_message(typed_data: Dict[str, Any]) -> bytes:
     raise RuntimeError("Could not derive EIP-712 typed data hash from eth-account message object")
 
 
-def sign_typed_data(private_key: str, typed_data: Dict[str, Any]) -> str:
+def sign_typed_data(private_key: str, typed_data: dict[str, Any]) -> str:
     hash_bytes = _hash_typed_message(typed_data)
     signature = Account.unsafe_sign_hash(hash_bytes, _normalize_private_key(private_key)).signature
     return signature.hex()
@@ -187,7 +190,7 @@ def sign_register_payload(
     signing_key_address: str,
     signing_key_private_key: str,
     expiry: str | int | None = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     account = _normalize_address(account_address)
     signing_key = _normalize_address(signing_key_address)
     account_sig = sign_typed_data(
@@ -224,7 +227,7 @@ def order_typed_message(
     instrument_id: str,
     timestamp: int | None = None,
     salt: int | None = None,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     if timestamp is None:
         timestamp = int(time.time())
     typed = _typed_data(
@@ -258,7 +261,7 @@ def sign_order_payload(
     reduce_only: bool = False,
     time_in_force: str = "GTC",
     mmp: bool = False,
-) -> Dict[str, str]:
+) -> dict[str, str]:
     typed = order_typed_message(
         network=network,
         account=account,

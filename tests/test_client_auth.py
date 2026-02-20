@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from mcp_aevo_server.client import AevoAPIClient
 
+
 # make config for testing
 def _make_config(**overrides):
     defaults = dict(
@@ -24,7 +25,9 @@ def _make_config(**overrides):
     return SimpleNamespace(**defaults)
 
 
-def _compute_expected_signature(api_key: str, api_secret: str, timestamp: str, method: str, path: str, body_str: str) -> str:
+def _compute_expected_signature(
+    api_key: str, api_secret: str, timestamp: str, method: str, path: str, body_str: str
+) -> str:
     """Reproduce the SDK HMAC signing logic."""
     message = f"{api_key},{timestamp},{method},{path},{body_str}"
     return hmac.new(api_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
@@ -55,8 +58,12 @@ def test_hmac_headers_on_get_request(mock_time):
         assert "AEVO-SECRET" not in headers
 
         expected_sig = _compute_expected_signature(
-            "test-api-key", "test-api-secret",
-            "1700000000000000000", "GET", "/account", "",
+            "test-api-key",
+            "test-api-secret",
+            "1700000000000000000",
+            "GET",
+            "/account",
+            "",
         )
         assert headers["AEVO-SIGNATURE"] == expected_sig
 
@@ -84,8 +91,12 @@ def test_hmac_headers_on_post_with_body(mock_time):
 
         expected_body_str = json.dumps(body)
         expected_sig = _compute_expected_signature(
-            "test-api-key", "test-api-secret",
-            "1700000000000000000", "POST", "/orders", expected_body_str,
+            "test-api-key",
+            "test-api-secret",
+            "1700000000000000000",
+            "POST",
+            "/orders",
+            expected_body_str,
         )
         assert headers["AEVO-SIGNATURE"] == expected_sig
 
@@ -96,7 +107,7 @@ def test_no_auth_headers_when_credentials_missing():
 
     mock_response = MagicMock()
     mock_response.status_code = 200
-    mock_response.text = '[]'
+    mock_response.text = "[]"
     mock_response.json.return_value = []
 
     with patch.object(client._session, "request", return_value=mock_response) as mock_req:
