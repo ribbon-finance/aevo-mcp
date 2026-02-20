@@ -18,7 +18,9 @@ def test_prompts_can_be_registered_and_return_text():
     assert "onboarding_plan" in prompts
     assert "market_analysis" in prompts
 
-    trade_output = prompts["trade_plan"]("BTC-USDC", "buy", "1", "50000", time_in_force="ioc", post_only=True, reduce_only=False)
+    trade_output = prompts["trade_plan"](
+        "BTC-USDC", "buy", "1", "50000", time_in_force="ioc", post_only=True, reduce_only=False
+    )
     assert "AEVO TRADE PLAN" in trade_output
     assert "Symbol: BTC-USDC" in trade_output
     assert "Side: buy" in trade_output
@@ -85,7 +87,9 @@ def test_resources_can_be_registered_and_serialized():
     def account_tool():
         return {"ok": True, "result": {"account": "ok"}}
 
-    resources = register_market_resources(mcp, status_tool=status_tool, market_tool=market_tool, account_tool=account_tool)
+    resources = register_market_resources(
+        mcp, status_tool=status_tool, market_tool=market_tool, account_tool=account_tool
+    )
 
     status = json.loads(resources["resource_status"]())
     markets = json.loads(resources["resource_markets_summary"]())
@@ -217,9 +221,12 @@ def test_options_iron_condor_prompt():
     prompts = register_options_prompts(mcp)
 
     output = prompts["options_iron_condor"](
-        asset="ETH", expiry="28MAR25",
-        put_buy_strike="2500", put_sell_strike="2800",
-        call_sell_strike="3200", call_buy_strike="3500",
+        asset="ETH",
+        expiry="28MAR25",
+        put_buy_strike="2500",
+        put_sell_strike="2800",
+        call_sell_strike="3200",
+        call_buy_strike="3500",
     )
     assert "IRON CONDOR" in output
     assert "4 legs" in output
@@ -234,8 +241,11 @@ def test_options_butterfly_prompt():
     prompts = register_options_prompts(mcp)
 
     output = prompts["options_butterfly"](
-        asset="ETH", expiry="28MAR25",
-        lower_strike="2800", middle_strike="3000", upper_strike="3200",
+        asset="ETH",
+        expiry="28MAR25",
+        lower_strike="2800",
+        middle_strike="3000",
+        upper_strike="3200",
     )
     assert "BUTTERFLY" in output
     assert "equidistant" in output

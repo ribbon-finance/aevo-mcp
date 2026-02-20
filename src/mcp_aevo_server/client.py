@@ -4,7 +4,7 @@ import hashlib
 import hmac
 import json as json_mod
 import time
-from typing import Any, Dict, List, Optional
+from typing import Any
 
 import requests
 
@@ -26,10 +26,10 @@ class AevoAPIClient:
         self._session = requests.Session()
         self._api_key = config.api_key
         self._api_secret = config.api_secret
-        self._market_cache: tuple[float, List[Dict[str, Any]]] = (0.0, [])
+        self._market_cache: tuple[float, list[dict[str, Any]]] = (0.0, [])
 
     @property
-    def base_headers(self) -> Dict[str, str]:
+    def base_headers(self) -> dict[str, str]:
         return {
             "Accept": "application/json",
             "Content-Type": "application/json",
@@ -52,9 +52,9 @@ class AevoAPIClient:
         method: str,
         path: str,
         *,
-        params: Dict[str, str] | None = None,
-        json: Dict[str, Any] | list[Any] | None = None,
-        headers: Dict[str, str] | None = None,
+        params: dict[str, str] | None = None,
+        json: dict[str, Any] | list[Any] | None = None,
+        headers: dict[str, str] | None = None,
     ) -> Any:
         url = f"{self.config.api_base_url.rstrip('/')}/{path.lstrip('/')}"
         merged_headers = self.base_headers.copy()
@@ -65,9 +65,7 @@ class AevoAPIClient:
                 timestamp = str(time.time_ns())
                 body_str = json_mod.dumps(json) if json else ""
                 message = f"{self._api_key},{timestamp},{method.upper()},{path},{body_str}"
-                signature = hmac.new(
-                    self._api_secret.encode(), message.encode(), hashlib.sha256
-                ).hexdigest()
+                signature = hmac.new(self._api_secret.encode(), message.encode(), hashlib.sha256).hexdigest()
                 merged_headers["AEVO-KEY"] = self._api_key
                 merged_headers["AEVO-TIMESTAMP"] = timestamp
                 merged_headers["AEVO-SIGNATURE"] = signature
@@ -119,7 +117,9 @@ class AevoAPIClient:
             raise AevoApiError(0, f"request retries exhausted: {last_error}") from last_error
         raise AevoApiError(0, "unexpected request state")
 
-    def get_markets(self, *, asset: str = "", instrument_type: str = "", use_cache: bool = True) -> List[Dict[str, Any]]:
+    def get_markets(
+        self, *, asset: str = "", instrument_type: str = "", use_cache: bool = True
+    ) -> list[dict[str, Any]]:
         is_filtered = bool(asset or instrument_type)
 
         if use_cache and not is_filtered:
@@ -183,22 +183,22 @@ class AevoAPIClient:
     def get_order(self, order_id: str) -> Any:
         return self._request("GET", f"/orders/{order_id}")
 
-    def create_order(self, payload: Dict[str, Any]) -> Any:
+    def create_order(self, payload: dict[str, Any]) -> Any:
         return self._request("POST", "/orders", json=payload)
 
     def cancel_order(self, order_id: str) -> Any:
         return self._request("DELETE", f"/orders/{order_id}")
 
     def cancel_all_orders(self, instrument_type: str | None = None, asset: str | None = None) -> Any:
-        body: Dict[str, Any] = {}
+        body: dict[str, Any] = {}
         if instrument_type:
             body["instrument_type"] = instrument_type
         if asset:
             body["asset"] = asset
         return self._request("DELETE", "/orders-all", json=body or None)
 
-    def cancel_orders(self, order_ids: List[str], instrument_type: str | None = None) -> Any:
-        body: Dict[str, Any] = {"order_ids": order_ids}
+    def cancel_orders(self, order_ids: list[str], instrument_type: str | None = None) -> Any:
+        body: dict[str, Any] = {"order_ids": order_ids}
         if instrument_type:
             body["instrument_type"] = instrument_type
         return self._request("DELETE", "/orders", json=body)
@@ -216,7 +216,7 @@ class AevoAPIClient:
         limit: str = "",
         offset: str = "",
     ) -> Any:
-        params: Dict[str, str] = {"instrument_name": instrument_name}
+        params: dict[str, str] = {"instrument_name": instrument_name}
         if start_time:
             params["start_time"] = start_time
         if end_time:
@@ -244,7 +244,7 @@ class AevoAPIClient:
         end_time: str = "",
         limit: str = "",
     ) -> Any:
-        params: Dict[str, str] = {"asset": asset}
+        params: dict[str, str] = {"asset": asset}
         if resolution:
             params["resolution"] = resolution
         if start_time:
@@ -263,7 +263,7 @@ class AevoAPIClient:
         end_time: str = "",
         limit: str = "",
     ) -> Any:
-        params: Dict[str, str] = {"instrument_name": instrument_name}
+        params: dict[str, str] = {"instrument_name": instrument_name}
         if resolution:
             params["resolution"] = resolution
         if start_time:
@@ -281,7 +281,7 @@ class AevoAPIClient:
         end_time: str = "",
         limit: str = "",
     ) -> Any:
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if asset:
             params["asset"] = asset
         if start_time:
@@ -311,7 +311,7 @@ class AevoAPIClient:
         instrument_type: str = "",
         asset: str = "",
     ) -> Any:
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if start_time:
             params["start_time"] = start_time
         if end_time:
@@ -340,7 +340,7 @@ class AevoAPIClient:
         instrument_type: str = "",
         asset: str = "",
     ) -> Any:
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
         if start_time:
             params["start_time"] = start_time
         if end_time:
@@ -357,5 +357,5 @@ class AevoAPIClient:
             params["asset"] = asset
         return self._request("GET", "/order-history", params=params)
 
-    def register(self, payload: Dict[str, Any]) -> Any:
+    def register(self, payload: dict[str, Any]) -> Any:
         return self._request("POST", "/register", json=payload, headers={})

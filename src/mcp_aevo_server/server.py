@@ -8,12 +8,12 @@ from mcp.server.fastmcp import FastMCP
 
 from .client import AevoAPIClient, AevoApiError
 from .config import AevoConfigError, AevoMcpConfig, load_config
+from .prompts import register_options_prompts, register_prompts
+from .resources import register_market_resources
 from .tools.account import register_account_tools
 from .tools.market import register_market_tools
 from .tools.order import register_order_tools
 from .tools.register import register_registration_tools
-from .prompts import register_options_prompts, register_prompts
-from .resources import register_market_resources
 from .utils import err_response, ok_response
 
 
@@ -31,7 +31,9 @@ def _run_auto_register(config: AevoMcpConfig, register_fn):
     return register_fn()
 
 
-def _build_server(config: AevoMcpConfig, host: str = "127.0.0.1", port: int = 8080, path: str = "/mcp") -> tuple[FastMCP, object]:
+def _build_server(
+    config: AevoMcpConfig, host: str = "127.0.0.1", port: int = 8080, path: str = "/mcp"
+) -> tuple[FastMCP, object]:
     client = AevoAPIClient(config)
     mcp = FastMCP("AEVO Trading", host=host, port=port, streamable_http_path=path)
 
@@ -85,7 +87,7 @@ def main() -> None:
         config = load_config()
     except AevoConfigError as exc:
         print(f"Invalid config: {exc}", file=sys.stderr)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
     transport = (args.transport or config.mcp_transport).lower()
     host = args.host or config.mcp_host
