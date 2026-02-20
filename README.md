@@ -7,8 +7,8 @@ MCP server for trading on [AEVO](https://app.aevo.xyz) — works with Claude Cod
 **1. Clone and configure**
 
 ```bash
-git clone https://github.com/aevo-xyz/mcp-aevo-server.git
-cd mcp-aevo-server
+git clone https://github.com/ribbon-finance/aevo-mcp.git
+cd aevo-mcp
 cp .env.example .env
 ```
 
