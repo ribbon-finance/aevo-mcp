@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mcp-aevo-server"
+version = "0.1.0"
+description = "Model Context Protocol server for AEVO trading"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "mcp>=1.0.0",
+  "requests>=2.30.0",
+  "eth-account>=0.12.2",
+  "eth-utils>=2.3.0",
+]
+
+[project.scripts]
+aevo-mcp = "mcp_aevo_server.server:main"
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8.0.0",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

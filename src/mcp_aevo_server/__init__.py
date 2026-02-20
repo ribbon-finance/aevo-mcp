@@ -1,0 +1,1 @@
+"""Aevo MCP server package."""

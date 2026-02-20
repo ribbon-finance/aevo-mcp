@@ -1,0 +1,10 @@
+version: '3.9'
+services:
+  aevo-mcp:
+    build: .
+    container_name: aevo-mcp-server
+    env_file: .env
+    ports:
+      - "8080:8080"
+    command: ["aevo-mcp", "--transport", "streamable-http", "--host", "0.0.0.0", "--port", "8080", "--path", "/mcp"]
+    restart: unless-stopped
