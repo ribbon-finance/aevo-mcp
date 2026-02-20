@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 from mcp_aevo_server.client import AevoAPIClient
 
-
+# make config for testing
 def _make_config(**overrides):
     defaults = dict(
         api_base_url="https://api.aevo.xyz",
