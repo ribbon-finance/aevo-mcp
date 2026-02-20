@@ -30,8 +30,8 @@ def _build_order_payload(
     close_position: bool = False,
     partial_position: bool = False,
 ) -> Dict[str, Any]:
-    if not config.wallet_private_key:
-        raise RuntimeError("AEVO_WALLET_PRIVATE_KEY is required")
+    if not config.wallet_address and not config.wallet_private_key:
+        raise RuntimeError("AEVO_WALLET_ADDRESS or AEVO_WALLET_PRIVATE_KEY is required")
     if not config.signing_key_private_key:
         raise RuntimeError("AEVO_SIGNING_KEY_PRIVATE_KEY is required")
 
@@ -114,7 +114,7 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
         close_position: bool = False,
         partial_position: bool = False,
     ) -> Dict[str, Any]:
-        """Build and return a signed order payload (no submission). Set stop/trigger for stop-loss or take-profit orders."""
+        """Build and return a signed order payload (no submission). Use human-readable values: amount in contracts (e.g. '0.5'), limit_price in USD (e.g. '67900'). Set stop/trigger for stop-loss or take-profit orders."""
         try:
             payload = _build_order_payload(
                 config=config,
@@ -157,7 +157,7 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
         close_position: bool = False,
         partial_position: bool = False,
     ) -> Dict[str, Any]:
-        """Build a signed order payload and submit it. Set stop/trigger for stop-loss or take-profit orders."""
+        """Build a signed order payload and submit it. Use human-readable values: amount in contracts (e.g. '0.5'), limit_price in USD (e.g. '67900'). Set stop/trigger for stop-loss or take-profit orders."""
         try:
             _require_credentials()
             payload = _build_order_payload(

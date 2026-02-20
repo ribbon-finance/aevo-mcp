@@ -8,3 +8,4 @@ src/mcp_aevo_server.egg-info/
 __pycache__/
 /tasks/todo.md
 /tasks/lessons.md
+uv.lock

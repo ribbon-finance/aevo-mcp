@@ -4,7 +4,7 @@ import json
 
 from mcp.server.fastmcp import FastMCP
 
-from mcp_aevo_server.prompts import register_prompts
+from mcp_aevo_server.prompts import register_options_prompts, register_prompts
 from mcp_aevo_server.resources import register_market_resources
 
 
@@ -148,3 +148,99 @@ def test_resources_backward_compatible_without_new_kwargs():
 
     assert "resource_funding_snapshot" not in resources
     assert "resource_statistics_snapshot" not in resources
+
+
+def test_options_prompts_register_all():
+    mcp = FastMCP("AEVO")
+    prompts = register_options_prompts(mcp)
+
+    expected = [
+        "options_strategy_selector",
+        "options_straddle",
+        "options_strangle",
+        "options_bull_call_spread",
+        "options_bear_put_spread",
+        "options_iron_condor",
+        "options_butterfly",
+    ]
+    for name in expected:
+        assert name in prompts, f"missing prompt: {name}"
+
+
+def test_options_strategy_selector_bullish():
+    mcp = FastMCP("AEVO")
+    prompts = register_options_prompts(mcp)
+
+    output = prompts["options_strategy_selector"](asset="BTC", outlook="bullish")
+    assert "BULLISH" in output
+    assert "Bull Call Spread" in output
+    assert "Long Call" in output
+    assert "BTC" in output
+
+
+def test_options_strategy_selector_neutral_high_vol():
+    mcp = FastMCP("AEVO")
+    prompts = register_options_prompts(mcp)
+
+    output = prompts["options_strategy_selector"](asset="ETH", outlook="neutral", volatility_view="high")
+    assert "HIGH VOLATILITY" in output
+    assert "Long Straddle" in output
+    assert "Long Strangle" in output
+
+
+def test_options_strategy_selector_neutral_low_vol():
+    mcp = FastMCP("AEVO")
+    prompts = register_options_prompts(mcp)
+
+    output = prompts["options_strategy_selector"](asset="ETH", outlook="neutral", volatility_view="low")
+    assert "LOW VOLATILITY" in output
+    assert "Iron Condor" in output
+    assert "Butterfly" in output
+
+
+def test_options_straddle_prompt():
+    mcp = FastMCP("AEVO")
+    prompts = register_options_prompts(mcp)
+
+    output = prompts["options_straddle"](asset="BTC", expiry="28MAR25", strike="70000")
+    assert "LONG STRADDLE" in output
+    assert "BTC" in output
+    assert "28MAR25" in output
+    assert "70000" in output
+    assert "Max Loss" in output
+    assert "Breakeven" in output
+    assert "create_order" in output
+
+
+def test_options_iron_condor_prompt():
+    mcp = FastMCP("AEVO")
+    prompts = register_options_prompts(mcp)
+
+    output = prompts["options_iron_condor"](
+        asset="ETH", expiry="28MAR25",
+        put_buy_strike="2500", put_sell_strike="2800",
+        call_sell_strike="3200", call_buy_strike="3500",
+    )
+    assert "IRON CONDOR" in output
+    assert "4 legs" in output
+    assert "2500" in output
+    assert "3500" in output
+    assert "Net Credit" in output
+    assert "Wing Width" in output
+
+
+def test_options_butterfly_prompt():
+    mcp = FastMCP("AEVO")
+    prompts = register_options_prompts(mcp)
+
+    output = prompts["options_butterfly"](
+        asset="ETH", expiry="28MAR25",
+        lower_strike="2800", middle_strike="3000", upper_strike="3200",
+    )
+    assert "BUTTERFLY" in output
+    assert "equidistant" in output
+    assert "SELL x2" in output
+    assert "BUY  x1" in output
+    assert "2800" in output
+    assert "3000" in output
+    assert "3200" in output

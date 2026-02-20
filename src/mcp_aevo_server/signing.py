@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import random
 import time
+from decimal import Decimal, InvalidOperation
 from typing import Any, Dict
 
 from eth_account import Account
@@ -18,6 +19,8 @@ from .config import AevoNetworkConfig
 
 MAX_UINT256_INT = 2**256 - 1
 MAX_UINT256_STR = str(MAX_UINT256_INT)
+
+SCALE = 10**6
 
 
 EIP712_DOMAIN = [
@@ -82,7 +85,31 @@ def _to_int(value: str, field_name: str) -> int:
             raise ValueError(f"{field_name} must be integer-like string") from err
     if out < 0:
         raise ValueError(f"{field_name} must be non-negative")
+    if out > MAX_UINT256_INT:
+        raise ValueError(f"{field_name} exceeds uint256 max")
     return out
+
+
+def _to_scaled_int(value: str, field_name: str) -> int:
+    """Convert a human-readable decimal to a 6-decimal fixed-point integer.
+
+    e.g. "2.86" -> 2860000, "67900" -> 67900000000
+    """
+    if value is None:
+        raise ValueError(f"{field_name} is required")
+    try:
+        d = Decimal(str(value))
+    except (InvalidOperation, ValueError) as err:
+        raise ValueError(f"{field_name} must be a valid number") from err
+    scaled = d * SCALE
+    if scaled != int(scaled):
+        raise ValueError(f"{field_name} exceeds 6 decimal places")
+    result = int(scaled)
+    if result < 0:
+        raise ValueError(f"{field_name} must be non-negative")
+    if result > MAX_UINT256_INT:
+        raise ValueError(f"{field_name} exceeds uint256 max")
+    return result
 
 
 def _typed_data(primary_type: str, types: Dict[str, Any], domain: AevoNetworkConfig, message: Dict[str, Any]) -> Dict[str, Any]:
@@ -105,13 +132,24 @@ def _hash_typed_message(typed_data: Dict[str, Any]) -> bytes:
     We keep this explicit to avoid personal-sign ambiguity; AEVO order verification uses
     raw signature recover against this hash.
     """
+    signed = None
     if encode_structured_data is not None:
         try:
             signed = encode_structured_data(typed_data)
         except Exception:
-            signed = encode_typed_data(typed_data)
-    else:
-        signed = encode_typed_data(typed_data)
+            pass
+    if signed is None:
+        try:
+            signed = encode_typed_data(full_message=typed_data)
+        except Exception:
+            try:
+                signed = encode_typed_data(typed_data)
+            except Exception:
+                signed = encode_typed_data(
+                    domain_data=typed_data["domain"],
+                    message_types=typed_data["types"],
+                    message_data=typed_data["message"],
+                )
     # eth-account SignableMessage implementations commonly expose `body` and `header`.
     body = getattr(signed, "body", None)
     header = getattr(signed, "header", None)
@@ -132,7 +170,7 @@ def _hash_typed_message(typed_data: Dict[str, Any]) -> bytes:
 
 def sign_typed_data(private_key: str, typed_data: Dict[str, Any]) -> str:
     hash_bytes = _hash_typed_message(typed_data)
-    signature = Account.sign_hash(hash_bytes, _normalize_private_key(private_key)).signature
+    signature = Account.unsafe_sign_hash(hash_bytes, _normalize_private_key(private_key)).signature
     return signature.hex()
 
 
@@ -194,8 +232,8 @@ def order_typed_message(
         {
             "maker": _normalize_address(account),
             "isBuy": bool(is_buy),
-            "limitPrice": _to_int(price, "price"),
-            "amount": _to_int(amount, "amount"),
+            "limitPrice": _to_scaled_int(price, "price"),
+            "amount": _to_scaled_int(amount, "amount"),
             "salt": _to_int(str(salt or random_salt()), "salt"),
             "instrument": _to_int(instrument_id, "instrument"),
             "timestamp": int(timestamp),

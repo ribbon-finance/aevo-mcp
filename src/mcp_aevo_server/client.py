@@ -120,10 +120,13 @@ class AevoAPIClient:
         raise AevoApiError(0, "unexpected request state")
 
     def get_markets(self, *, asset: str = "", instrument_type: str = "", use_cache: bool = True) -> List[Dict[str, Any]]:
-        now = time.time()
-        cached_at, cached_markets = self._market_cache
-        if use_cache and now - cached_at < 20 and cached_markets:
-            return cached_markets
+        is_filtered = bool(asset or instrument_type)
+
+        if use_cache and not is_filtered:
+            now = time.time()
+            cached_at, cached_markets = self._market_cache
+            if now - cached_at < 20 and cached_markets:
+                return cached_markets
 
         params = {}
         if asset:
@@ -134,7 +137,8 @@ class AevoAPIClient:
         response = self._request("GET", "/markets", params=params)
         markets = response if isinstance(response, list) else response.get("data", response)
         markets_list = list(markets)
-        self._market_cache = (now, markets_list)
+        if not is_filtered:
+            self._market_cache = (time.time(), markets_list)
         return markets_list
 
     def resolve_instrument_id(self, instrument_name: str) -> str | None:
@@ -191,7 +195,7 @@ class AevoAPIClient:
             body["instrument_type"] = instrument_type
         if asset:
             body["asset"] = asset
-        return self._request("DELETE", "/orders-all", json=body or {})
+        return self._request("DELETE", "/orders-all", json=body or None)
 
     def cancel_orders(self, order_ids: List[str], instrument_type: str | None = None) -> Any:
         body: Dict[str, Any] = {"order_ids": order_ids}

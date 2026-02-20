@@ -12,7 +12,7 @@ from .tools.account import register_account_tools
 from .tools.market import register_market_tools
 from .tools.order import register_order_tools
 from .tools.register import register_registration_tools
-from .prompts import register_prompts
+from .prompts import register_options_prompts, register_prompts
 from .resources import register_market_resources
 from .utils import err_response, ok_response
 
@@ -41,6 +41,7 @@ def _build_server(config: AevoMcpConfig, host: str = "127.0.0.1", port: int = 80
     registration_tools = register_registration_tools(mcp, client, config)
 
     register_prompts(mcp)
+    register_options_prompts(mcp)
     register_market_resources(
         mcp,
         status_tool=account_tools["status"],
