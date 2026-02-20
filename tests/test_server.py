@@ -48,18 +48,32 @@ def test_build_server_registers_tools_and_components(monkeypatch):
     status_tool = Mock(name="status")
     account_tool = Mock(name="account")
     markets_tool = Mock(name="markets")
+    funding_rate_tool = Mock(name="funding_rate")
+    statistics_tool = Mock(name="statistics")
 
     market_tools = {
         "markets": markets_tool,
         "assets": Mock(name="assets"),
         "orderbook": Mock(name="orderbook"),
         "instrument": Mock(name="instrument"),
+        "funding_rate": funding_rate_tool,
+        "funding_history": Mock(name="funding_history"),
+        "trade_history": Mock(name="trade_history"),
+        "statistics": statistics_tool,
+        "index_price": Mock(name="index_price"),
+        "index_history": Mock(name="index_history"),
+        "mark_history": Mock(name="mark_history"),
+        "settlement_history": Mock(name="settlement_history"),
+        "expiries": Mock(name="expiries"),
+        "server_time": Mock(name="server_time"),
     }
     account_tools = {
         "status": status_tool,
         "account": account_tool,
         "portfolio": Mock(name="portfolio"),
         "positions": Mock(name="positions"),
+        "account_trade_history": Mock(name="account_trade_history"),
+        "order_history": Mock(name="order_history"),
     }
     order_tools = {
         "list_orders": Mock(name="list_orders"),
@@ -88,7 +102,7 @@ def test_build_server_registers_tools_and_components(monkeypatch):
 
     config = SimpleNamespace(
         environment="mainnet",
-        account_private_key="0x" + "1" * 64,
+        wallet_private_key="0x" + "1" * 64,
         signing_key_private_key="0x" + "2" * 64,
     )
 
@@ -104,6 +118,8 @@ def test_build_server_registers_tools_and_components(monkeypatch):
     assert resource_kwargs["status_tool"] is status_tool
     assert resource_kwargs["market_tool"] is markets_tool
     assert resource_kwargs["account_tool"] is account_tool
+    assert resource_kwargs["funding_tool"] is funding_rate_tool
+    assert resource_kwargs["statistics_tool"] is statistics_tool
 
     assert register_fn is registration_tools["register_account"]
 
@@ -113,7 +129,7 @@ def test_run_auto_register_when_disabled_returns_none():
         auto_register=False,
         api_key="",
         api_secret="",
-        account_private_key="",
+        wallet_private_key="",
         signing_key_private_key="",
     )
     register = Mock()
@@ -129,7 +145,7 @@ def test_run_auto_register_skips_when_api_credentials_are_present():
         auto_register=True,
         api_key="api-key",
         api_secret="api-secret",
-        account_private_key="",
+        wallet_private_key="",
         signing_key_private_key="",
     )
     register = Mock()
@@ -148,7 +164,7 @@ def test_run_auto_register_fails_if_signing_keys_missing():
         auto_register=True,
         api_key="",
         api_secret="",
-        account_private_key="",
+        wallet_private_key="",
         signing_key_private_key="",
     )
     register = Mock()
@@ -158,7 +174,7 @@ def test_run_auto_register_fails_if_signing_keys_missing():
     assert result == {
         "ok": False,
         "error": "auto-register skipped",
-        "details": "missing AEVO_ACCOUNT_PRIVATE_KEY or AEVO_SIGNING_KEY_PRIVATE_KEY",
+        "details": "missing AEVO_WALLET_PRIVATE_KEY or AEVO_SIGNING_KEY_PRIVATE_KEY",
     }
     register.assert_not_called()
 
@@ -168,7 +184,7 @@ def test_run_auto_register_calls_register_function_when_ready():
         auto_register=True,
         api_key="",
         api_secret="",
-        account_private_key="0x" + "1" * 64,
+        wallet_private_key="0x" + "1" * 64,
         signing_key_private_key="0x" + "2" * 64,
     )
     register = Mock(return_value={"ok": True, "result": {"ok": True}})

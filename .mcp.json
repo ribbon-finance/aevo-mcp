@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "aevo-trading": {
+      "type": "stdio",
+      "command": "aevo-mcp",
+      "args": ["--transport", "stdio"],
+      "env": {}
+    }
+  }
+}

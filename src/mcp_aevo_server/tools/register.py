@@ -6,9 +6,9 @@ from mcp.server.fastmcp import FastMCP
 
 from ..client import AevoApiError
 from ..config import AevoMcpConfig
-from ..signing import sign_register_payload
+from ..signing import derive_address, sign_register_payload
 from ..utils import err_response, ok_response, parse_int_field
-from ..utils.addressing import resolve_account_address, resolve_signing_key_address
+from ..utils.addressing import resolve_wallet_address
 
 
 def _max_expiry_value() -> str:
@@ -17,8 +17,8 @@ def _max_expiry_value() -> str:
 
 def register_registration_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Dict[str, Any]:
     def _require_signing_keys() -> None:
-        if not config.account_private_key:
-            raise RuntimeError("AEVO_ACCOUNT_PRIVATE_KEY is required")
+        if not config.wallet_private_key:
+            raise RuntimeError("AEVO_WALLET_PRIVATE_KEY is required")
         if not config.signing_key_private_key:
             raise RuntimeError("AEVO_SIGNING_KEY_PRIVATE_KEY is required")
 
@@ -31,8 +31,8 @@ def register_registration_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig
         """Register signing key and optionally API credentials."""
         try:
             _require_signing_keys()
-            account_address = resolve_account_address(config)
-            signing_key_address = resolve_signing_key_address(config)
+            account_address = resolve_wallet_address(config)
+            signing_key_address = derive_address(config.signing_key_private_key)
 
             expiry = _max_expiry_value()
             if key_expiry:
@@ -41,7 +41,7 @@ def register_registration_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig
             signed = sign_register_payload(
                 network=config.network,
                 account_address=account_address,
-                account_private_key=config.account_private_key,
+                account_private_key=config.wallet_private_key,
                 signing_key_address=signing_key_address,
                 signing_key_private_key=config.signing_key_private_key,
                 expiry=expiry,

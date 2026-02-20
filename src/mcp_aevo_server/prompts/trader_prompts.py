@@ -68,9 +68,32 @@ def register_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "6) Verify first build with `build_order` and inspect signed payload.\n"
         )
 
+    @mcp.prompt()
+    def market_analysis(symbol: str = "ETH-PERP", asset: str = "ETH") -> str:
+        return (
+            "AEVO MARKET ANALYSIS\n"
+            f"Symbol: {symbol}\n"
+            f"Asset: {asset}\n\n"
+            "Data-gathering sequence:\n"
+            f"1) Fetch index price via `index_price(asset='{asset}')`.\n"
+            f"2) Fetch current funding rate via `funding_rate(instrument_name='{symbol}')`.\n"
+            f"3) Fetch funding history via `funding_history(instrument_name='{symbol}')`.\n"
+            "4) Fetch exchange-wide statistics via `statistics()`.\n"
+            f"5) Snapshot orderbook via `orderbook(instrument_name='{symbol}')`.\n"
+            f"6) Fetch recent trades via `trade_history(instrument_name='{symbol}')`.\n"
+            f"7) Fetch mark price history via `mark_history(instrument_name='{symbol}')`.\n\n"
+            "Analysis:\n"
+            "- Compare index vs mark price for premium/discount.\n"
+            "- Evaluate funding rate trend (positive = longs pay, negative = shorts pay).\n"
+            "- Assess orderbook depth and bid-ask spread.\n"
+            "- Review recent trade flow for directional bias.\n"
+            "- Summarize market conditions and potential trade setups.\n"
+        )
+
     return {
         "trade_plan": trade_plan,
         "risk_checklist": risk_checklist,
         "cancel_plan": cancel_plan,
         "onboarding_plan": onboarding_plan,
+        "market_analysis": market_analysis,
     }

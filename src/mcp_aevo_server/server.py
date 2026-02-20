@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 
 from mcp.server.fastmcp import FastMCP
 
@@ -21,10 +22,10 @@ def _run_auto_register(config: AevoMcpConfig, register_fn):
         return None
     if config.api_key and config.api_secret:
         return ok_response("auto-register skipped because AEVO_API_KEY/AEVO_API_SECRET are already set")
-    if not config.account_private_key or not config.signing_key_private_key:
+    if not config.wallet_private_key or not config.signing_key_private_key:
         return err_response(
             "auto-register skipped",
-            "missing AEVO_ACCOUNT_PRIVATE_KEY or AEVO_SIGNING_KEY_PRIVATE_KEY",
+            "missing AEVO_WALLET_PRIVATE_KEY or AEVO_SIGNING_KEY_PRIVATE_KEY",
         )
 
     return register_fn()
@@ -45,6 +46,8 @@ def _build_server(config: AevoMcpConfig) -> tuple[FastMCP, object]:
         status_tool=account_tools["status"],
         market_tool=market_tools["markets"],
         account_tool=account_tools["account"],
+        funding_tool=market_tools["funding_rate"],
+        statistics_tool=market_tools["statistics"],
     )
 
     # keep a named local for compatibility with auto-register bootstrap
@@ -80,13 +83,13 @@ def main() -> None:
     try:
         config = load_config()
     except AevoConfigError as exc:
-        print(f"Invalid config: {exc}")
+        print(f"Invalid config: {exc}", file=sys.stderr)
         raise SystemExit(1)
 
     server, register_fn = _build_server(config)
     auto = _run_auto_register(config, register_fn)
     if auto is not None:
-        print(f"[aevo-mcp] auto-register: {json.dumps(auto)}")
+        print(f"[aevo-mcp] auto-register: {json.dumps(auto)}", file=sys.stderr)
 
     transport = (args.transport or config.mcp_transport).lower()
     if transport == "stdio":

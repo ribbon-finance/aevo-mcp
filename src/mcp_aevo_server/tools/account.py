@@ -6,24 +6,30 @@ from mcp.server.fastmcp import FastMCP
 
 from ..client import AevoApiError
 from ..config import AevoMcpConfig
+from ..signing import derive_address
 from ..utils import err_response, ok_response
-from ..utils.addressing import resolve_account_address, resolve_signing_key_address
+from ..utils.addressing import resolve_wallet_address
 
 
 def status_payload(config: AevoMcpConfig, client: Any) -> Dict[str, Any]:
     try:
-        account_address = resolve_account_address(config)
-        signing_key_address = resolve_signing_key_address(config)
+        wallet_address = resolve_wallet_address(config)
     except RuntimeError:
-        account_address = config.account_address or ""
-        signing_key_address = config.signing_key_address or ""
+        wallet_address = config.wallet_address or ""
+
+    signing_key_address = ""
+    if config.signing_key_private_key:
+        try:
+            signing_key_address = derive_address(config.signing_key_private_key)
+        except Exception:
+            pass
 
     return {
         "environment": config.environment,
         "api_base_url": config.api_base_url,
-        "account_address": account_address,
+        "wallet_address": wallet_address,
         "signing_key": signing_key_address,
-        "has_signing_keys": bool(config.account_private_key and config.signing_key_private_key),
+        "has_signing_keys": bool(config.wallet_private_key and config.signing_key_private_key),
         "has_api_credentials": client.has_credentials,
         "mcp_host": config.mcp_host,
         "mcp_port": config.mcp_port,
@@ -76,11 +82,73 @@ def register_account_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> 
         except Exception as exc:
             return err_response("failed to fetch positions", str(exc))
 
+    @mcp.tool()
+    def account_trade_history(
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+        offset: str = "",
+        trade_types: str = "",
+        instrument_name: str = "",
+        instrument_type: str = "",
+        asset: str = "",
+    ) -> Dict[str, Any]:
+        """Return trade (fill) history for the authenticated account."""
+        try:
+            require_api_credentials(client)
+            return ok_response(
+                client.get_account_trade_history(
+                    start_time=start_time,
+                    end_time=end_time,
+                    limit=limit,
+                    offset=offset,
+                    trade_types=trade_types,
+                    instrument_name=instrument_name,
+                    instrument_type=instrument_type,
+                    asset=asset,
+                )
+            )
+        except (RuntimeError, AevoApiError) as exc:
+            return err_response("failed to fetch account trade history", str(exc))
+        except Exception as exc:
+            return err_response("failed to fetch account trade history", str(exc))
+
+    @mcp.tool()
+    def order_history(
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+        offset: str = "",
+        instrument_name: str = "",
+        instrument_type: str = "",
+        asset: str = "",
+    ) -> Dict[str, Any]:
+        """Return historical orders for the authenticated account."""
+        try:
+            require_api_credentials(client)
+            return ok_response(
+                client.get_order_history(
+                    start_time=start_time,
+                    end_time=end_time,
+                    limit=limit,
+                    offset=offset,
+                    instrument_name=instrument_name,
+                    instrument_type=instrument_type,
+                    asset=asset,
+                )
+            )
+        except (RuntimeError, AevoApiError) as exc:
+            return err_response("failed to fetch order history", str(exc))
+        except Exception as exc:
+            return err_response("failed to fetch order history", str(exc))
+
     return {
         "status": status,
         "account": account,
         "portfolio": portfolio,
         "positions": positions,
+        "account_trade_history": account_trade_history,
+        "order_history": order_history,
         "status_payload": lambda: status_payload(config, client),
         "require_api_credentials": lambda: require_api_credentials(client),
     }

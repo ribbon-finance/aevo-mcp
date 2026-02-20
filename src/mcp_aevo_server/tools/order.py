@@ -9,7 +9,7 @@ from ..client import AevoApiError
 from ..config import AevoMcpConfig
 from ..signing import sign_order_payload
 from ..utils import err_response, ok_response, parse_int_field
-from ..utils.addressing import resolve_account_address
+from ..utils.addressing import resolve_wallet_address
 
 
 def _build_order_payload(
@@ -25,18 +25,22 @@ def _build_order_payload(
     reduce_only: bool,
     time_in_force: str,
     mmp: bool,
+    stop: str = "",
+    trigger: str = "",
+    close_position: bool = False,
+    partial_position: bool = False,
 ) -> Dict[str, Any]:
-    if not config.account_private_key:
-        raise RuntimeError("AEVO_ACCOUNT_PRIVATE_KEY is required")
+    if not config.wallet_private_key:
+        raise RuntimeError("AEVO_WALLET_PRIVATE_KEY is required")
     if not config.signing_key_private_key:
         raise RuntimeError("AEVO_SIGNING_KEY_PRIVATE_KEY is required")
 
-    account_address = resolve_account_address(config)
+    account_address = resolve_wallet_address(config)
     instrument_id = client.resolve_instrument_id(instrument)
     if not instrument_id:
         raise RuntimeError(f"instrument not found: {instrument}")
 
-    return sign_order_payload(
+    payload = sign_order_payload(
         network=config.network,
         account=account_address,
         is_buy=is_buy,
@@ -51,6 +55,17 @@ def _build_order_payload(
         time_in_force=time_in_force,
         mmp=mmp,
     )
+
+    if stop:
+        payload["stop"] = stop
+    if trigger:
+        payload["trigger"] = trigger
+    if close_position:
+        payload["close_position"] = True
+    if partial_position:
+        payload["partial_position"] = True
+
+    return payload
 
 
 def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Dict[str, Any]:
@@ -94,8 +109,12 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
         reduce_only: bool = False,
         time_in_force: str = "GTC",
         mmp: bool = False,
+        stop: str = "",
+        trigger: str = "",
+        close_position: bool = False,
+        partial_position: bool = False,
     ) -> Dict[str, Any]:
-        """Build and return a signed order payload (no submission)."""
+        """Build and return a signed order payload (no submission). Set stop/trigger for stop-loss or take-profit orders."""
         try:
             payload = _build_order_payload(
                 config=config,
@@ -110,6 +129,10 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
                 reduce_only=reduce_only,
                 time_in_force=time_in_force,
                 mmp=mmp,
+                stop=stop,
+                trigger=trigger,
+                close_position=close_position,
+                partial_position=partial_position,
             )
             return ok_response(payload)
         except (RuntimeError, ValueError, AevoApiError) as exc:
@@ -129,8 +152,12 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
         reduce_only: bool = False,
         time_in_force: str = "GTC",
         mmp: bool = False,
+        stop: str = "",
+        trigger: str = "",
+        close_position: bool = False,
+        partial_position: bool = False,
     ) -> Dict[str, Any]:
-        """Build a signed order payload and submit it."""
+        """Build a signed order payload and submit it. Set stop/trigger for stop-loss or take-profit orders."""
         try:
             _require_credentials()
             payload = _build_order_payload(
@@ -146,6 +173,10 @@ def register_order_tools(mcp: FastMCP, client: Any, config: AevoMcpConfig) -> Di
                 reduce_only=reduce_only,
                 time_in_force=time_in_force,
                 mmp=mmp,
+                stop=stop,
+                trigger=trigger,
+                close_position=close_position,
+                partial_position=partial_position,
             )
             return ok_response(client.create_order(payload))
         except (RuntimeError, ValueError, AevoApiError) as exc:

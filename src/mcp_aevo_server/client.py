@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json as json_mod
 import time
 from typing import Any, Dict, List, Optional
 
@@ -27,14 +30,10 @@ class AevoAPIClient:
 
     @property
     def base_headers(self) -> Dict[str, str]:
-        headers = {
+        return {
             "Accept": "application/json",
             "Content-Type": "application/json",
         }
-        if self._api_key and self._api_secret:
-            headers["AEVO-KEY"] = self._api_key
-            headers["AEVO-SECRET"] = self._api_secret
-        return headers
 
     @property
     def has_credentials(self) -> bool:
@@ -59,8 +58,19 @@ class AevoAPIClient:
     ) -> Any:
         url = f"{self.config.api_base_url.rstrip('/')}/{path.lstrip('/')}"
         merged_headers = self.base_headers.copy()
-        if headers:
+        if headers is not None:
             merged_headers.update(headers)
+        else:
+            if self._api_key and self._api_secret:
+                timestamp = str(time.time_ns())
+                body_str = json_mod.dumps(json) if json else ""
+                message = f"{self._api_key},{timestamp},{method.upper()},{path},{body_str}"
+                signature = hmac.new(
+                    self._api_secret.encode(), message.encode(), hashlib.sha256
+                ).hexdigest()
+                merged_headers["AEVO-KEY"] = self._api_key
+                merged_headers["AEVO-TIMESTAMP"] = timestamp
+                merged_headers["AEVO-SIGNATURE"] = signature
 
         last_error = None
         for attempt in range(1, self.config.request_retries + 1):
@@ -188,6 +198,160 @@ class AevoAPIClient:
         if instrument_type:
             body["instrument_type"] = instrument_type
         return self._request("DELETE", "/orders", json=body)
+
+    # ── Public market data ──────────────────────────────────────────
+
+    def get_funding(self, instrument_name: str) -> Any:
+        return self._request("GET", "/funding", params={"instrument_name": instrument_name})
+
+    def get_funding_history(
+        self,
+        instrument_name: str,
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+        offset: str = "",
+    ) -> Any:
+        params: Dict[str, str] = {"instrument_name": instrument_name}
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        return self._request("GET", "/funding-history", params=params)
+
+    def get_trade_history_public(self, instrument_name: str) -> Any:
+        return self._request("GET", f"/instrument/{instrument_name}/trade-history")
+
+    def get_statistics(self) -> Any:
+        return self._request("GET", "/statistics")
+
+    def get_index(self, asset: str) -> Any:
+        return self._request("GET", "/index", params={"asset": asset})
+
+    def get_index_history(
+        self,
+        asset: str,
+        resolution: str = "",
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+    ) -> Any:
+        params: Dict[str, str] = {"asset": asset}
+        if resolution:
+            params["resolution"] = resolution
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if limit:
+            params["limit"] = limit
+        return self._request("GET", "/index-history", params=params)
+
+    def get_mark_history(
+        self,
+        instrument_name: str,
+        resolution: str = "",
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+    ) -> Any:
+        params: Dict[str, str] = {"instrument_name": instrument_name}
+        if resolution:
+            params["resolution"] = resolution
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if limit:
+            params["limit"] = limit
+        return self._request("GET", "/mark-history", params=params)
+
+    def get_settlement_history(
+        self,
+        asset: str = "",
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+    ) -> Any:
+        params: Dict[str, str] = {}
+        if asset:
+            params["asset"] = asset
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if limit:
+            params["limit"] = limit
+        return self._request("GET", "/settlement-history", params=params)
+
+    def get_expiries(self, asset: str) -> Any:
+        return self._request("GET", "/expiries", params={"asset": asset})
+
+    def get_time(self) -> Any:
+        return self._request("GET", "/time")
+
+    # ── Private (auth-gated) ──────────────────────────────────────
+
+    def get_account_trade_history(
+        self,
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+        offset: str = "",
+        trade_types: str = "",
+        instrument_name: str = "",
+        instrument_type: str = "",
+        asset: str = "",
+    ) -> Any:
+        params: Dict[str, str] = {}
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        if trade_types:
+            params["trade_types"] = trade_types
+        if instrument_name:
+            params["instrument_name"] = instrument_name
+        if instrument_type:
+            params["instrument_type"] = instrument_type
+        if asset:
+            params["asset"] = asset
+        return self._request("GET", "/trade-history", params=params)
+
+    def get_order_history(
+        self,
+        start_time: str = "",
+        end_time: str = "",
+        limit: str = "",
+        offset: str = "",
+        instrument_name: str = "",
+        instrument_type: str = "",
+        asset: str = "",
+    ) -> Any:
+        params: Dict[str, str] = {}
+        if start_time:
+            params["start_time"] = start_time
+        if end_time:
+            params["end_time"] = end_time
+        if limit:
+            params["limit"] = limit
+        if offset:
+            params["offset"] = offset
+        if instrument_name:
+            params["instrument_name"] = instrument_name
+        if instrument_type:
+            params["instrument_type"] = instrument_type
+        if asset:
+            params["asset"] = asset
+        return self._request("GET", "/order-history", params=params)
 
     def register(self, payload: Dict[str, Any]) -> Any:
         return self._request("POST", "/register", json=payload, headers={})

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from dataclasses import dataclass
 from typing import Dict
 
@@ -13,10 +14,12 @@ NETWORKS: Dict[str, Dict[str, object]] = {
     "mainnet": {
         "domain": "Aevo Mainnet",
         "chain_id": 1,
+        "api_base_url": "https://api.aevo.xyz",
     },
     "testnet": {
         "domain": "Aevo Testnet",
         "chain_id": 11155111,
+        "api_base_url": "https://api-testnet.aevo.xyz",
     },
 }
 
@@ -59,10 +62,8 @@ class AevoNetworkConfig:
 class AevoMcpConfig:
     environment: str
     api_base_url: str
-    ws_url: str
-    account_address: str
-    account_private_key: str
-    signing_key_address: str
+    wallet_address: str
+    wallet_private_key: str
     signing_key_private_key: str
     api_key: str
     api_secret: str
@@ -83,21 +84,24 @@ class AevoMcpConfig:
 
 
 def load_config() -> AevoMcpConfig:
-    environment = (_env("AEVO_ENVIRONMENT", "mainnet") or "mainnet").lower()
+    environment = ((_env("AEVO_ENVIRONMENT") or _env("AEVO_ENV") or "mainnet") or "mainnet").lower()
     if environment not in NETWORKS:
         raise AevoConfigError(
-            f"AEVO_ENVIRONMENT must be one of: {', '.join(sorted(NETWORKS.keys()))}"
+            f"AEVO_ENVIRONMENT (or AEVO_ENV) must be one of: {', '.join(sorted(NETWORKS.keys()))}"
         )
+    env_cfg = NETWORKS[environment]
+
+    # Warn on deprecated env var names
+    if _env("AEVO_ACCOUNT_ADDRESS") and not _env("AEVO_WALLET_ADDRESS"):
+        print("[aevo-mcp] AEVO_ACCOUNT_ADDRESS is deprecated, use AEVO_WALLET_ADDRESS", file=sys.stderr)
+    if _env("AEVO_ACCOUNT_PRIVATE_KEY") and not _env("AEVO_WALLET_PRIVATE_KEY"):
+        print("[aevo-mcp] AEVO_ACCOUNT_PRIVATE_KEY is deprecated, use AEVO_WALLET_PRIVATE_KEY", file=sys.stderr)
 
     return AevoMcpConfig(
         environment=environment,
-        api_base_url=(_env("AEVO_API_BASE_URL", "https://api.aevo.xyz") or "https://api.aevo.xyz").rstrip(
-            "/"
-        ),
-        ws_url=_env("AEVO_WS_URL", "wss://ws.aevo.xyz/ws") or "wss://ws.aevo.xyz/ws",
-        account_address=_env("AEVO_ACCOUNT_ADDRESS", "") or "",
-        account_private_key=_env("AEVO_ACCOUNT_PRIVATE_KEY", "") or "",
-        signing_key_address=_env("AEVO_SIGNING_KEY", "") or "",
+        api_base_url=(_env("AEVO_API_BASE_URL", env_cfg["api_base_url"]) or env_cfg["api_base_url"]).rstrip("/"),
+        wallet_address=_env("AEVO_WALLET_ADDRESS") or _env("AEVO_ACCOUNT_ADDRESS", "") or "",
+        wallet_private_key=_env("AEVO_WALLET_PRIVATE_KEY") or _env("AEVO_ACCOUNT_PRIVATE_KEY", "") or "",
         signing_key_private_key=_env("AEVO_SIGNING_KEY_PRIVATE_KEY", "") or "",
         api_key=_env("AEVO_API_KEY", "") or "",
         api_secret=_env("AEVO_API_SECRET", "") or "",

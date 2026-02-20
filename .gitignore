@@ -2,3 +2,9 @@ CLAUDE.md
 AGENTS.md
 /context
 /docs
+.venv
+src/mcp_aevo_server.egg-info/
+.env
+__pycache__/
+/tasks/todo.md
+/tasks/lessons.md

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from mcp.server.fastmcp import FastMCP
 
@@ -22,13 +23,19 @@ class FakeClient:
         self._api_secret = api_secret
 
 
-def test_register_tool_returns_credentials_and_stores():
+MOCK_SIGNED = {
+    "account_signature": "0xdeadbeef01",
+    "signing_key_signature": "0xdeadbeef02",
+}
+
+
+@patch("mcp_aevo_server.tools.register.sign_register_payload", return_value=dict(MOCK_SIGNED))
+def test_register_tool_returns_credentials_and_stores(mock_sign):
     client = FakeClient()
     config = SimpleNamespace(
-        account_private_key="0x" + "1" * 64,
+        wallet_private_key="0x" + "1" * 64,
         signing_key_private_key="0x" + "2" * 64,
-        account_address="",
-        signing_key_address="",
+        wallet_address="",
         network=SimpleNamespace(name="Aevo Mainnet", chain_id=1),
     )
 

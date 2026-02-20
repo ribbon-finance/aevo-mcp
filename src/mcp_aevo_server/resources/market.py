@@ -10,6 +10,8 @@ def register_market_resources(
     status_tool,
     market_tool,
     account_tool,
+    funding_tool=None,
+    statistics_tool=None,
 ) -> dict[str, Callable]:
     @mcp.resource("aevo://status")
     def resource_status() -> str:
@@ -23,8 +25,26 @@ def register_market_resources(
     def resource_account_overview() -> str:
         return json.dumps(account_tool(), indent=2)
 
-    return {
+    result: dict[str, Callable] = {
         "resource_status": resource_status,
         "resource_markets_summary": resource_markets_summary,
         "resource_account_overview": resource_account_overview,
     }
+
+    if funding_tool is not None:
+
+        @mcp.resource("aevo://funding/snapshot")
+        def resource_funding_snapshot() -> str:
+            return json.dumps(funding_tool("ETH-PERP"), indent=2)
+
+        result["resource_funding_snapshot"] = resource_funding_snapshot
+
+    if statistics_tool is not None:
+
+        @mcp.resource("aevo://statistics/snapshot")
+        def resource_statistics_snapshot() -> str:
+            return json.dumps(statistics_tool(), indent=2)
+
+        result["resource_statistics_snapshot"] = resource_statistics_snapshot
+
+    return result
