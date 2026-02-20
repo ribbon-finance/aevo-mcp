@@ -231,7 +231,7 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
         call_buy_strike: str = "",
     ) -> str:
         return (
-            "IRON CONDOR EXECUTION PLAN\n"
+            "Strategy: Iron Condor - IRON CONDOR EXECUTION PLAN\n"
             f"Asset: {asset} | Expiry: {expiry or 'TBD'}\n"
             f"Put wing: Buy {put_buy_strike or 'far OTM'} / Sell {put_sell_strike or 'OTM'}\n"
             f"Call wing: Sell {call_sell_strike or 'OTM'} / Buy {call_buy_strike or 'far OTM'}\n\n"
@@ -278,7 +278,7 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
         upper_strike: str = "",
     ) -> str:
         return (
-            "BUTTERFLY SPREAD EXECUTION PLAN\n"
+            "Strategy: Butterfly Spread - BUTTERFLY SPREAD EXECUTION PLAN\n"
             f"Asset: {asset} | Expiry: {expiry or 'TBD'}\n"
             f"Lower: {lower_strike or 'TBD'} | Middle: {middle_strike or 'ATM'} | Upper: {upper_strike or 'TBD'}\n\n"
             "STRUCTURE: Buy 1 Call lower, Sell 2 Calls middle, Buy 1 Call upper.\n"

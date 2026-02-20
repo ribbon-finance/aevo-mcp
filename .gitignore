@@ -6,6 +6,7 @@ AGENTS.md
 src/mcp_aevo_server.egg-info/
 .env
 __pycache__/
+/tasks/
 /tasks/todo.md
 /tasks/lessons.md
 uv.lock

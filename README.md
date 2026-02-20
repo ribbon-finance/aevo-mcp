@@ -105,7 +105,7 @@ Edit `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
 | `AEVO_WALLET_PRIVATE_KEY` | No | Wallet private key (for `register_account` tool) |
 | `AEVO_AUTO_REGISTER` | No | Auto-register on startup (`true`/`false`) |
 
-\* Don't have API keys? Set `AEVO_WALLET_ADDRESS` + `AEVO_WALLET_PRIVATE_KEY` and use the `register_account` tool to generate them.
+\* Don't have API keys? Set `AEVO_WALLET_ADDRESS` + `AEVO_WALLET_PRIVATE_KEY` and use the `register_account` tool to generate them. Advise to have a account and use aevo wallet to generate keys.
 
 ## What's Included
 

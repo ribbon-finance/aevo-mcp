@@ -101,6 +101,8 @@ def _to_scaled_int(value: str, field_name: str) -> int:
         d = Decimal(str(value))
     except (InvalidOperation, ValueError) as err:
         raise ValueError(f"{field_name} must be a valid number") from err
+    if not d.is_finite():
+        raise ValueError(f"{field_name} must be a finite number")
     scaled = d * SCALE
     if scaled != int(scaled):
         raise ValueError(f"{field_name} exceeds 6 decimal places")

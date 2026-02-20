@@ -92,9 +92,9 @@ def load_config() -> AevoMcpConfig:
     env_cfg = NETWORKS[environment]
 
     # Warn on deprecated env var names
-    if _env("AEVO_ACCOUNT_ADDRESS") and not _env("AEVO_WALLET_ADDRESS"):
+    if _env("AEVO_ACCOUNT_ADDRESS"):
         print("[aevo-mcp] AEVO_ACCOUNT_ADDRESS is deprecated, use AEVO_WALLET_ADDRESS", file=sys.stderr)
-    if _env("AEVO_ACCOUNT_PRIVATE_KEY") and not _env("AEVO_WALLET_PRIVATE_KEY"):
+    if _env("AEVO_ACCOUNT_PRIVATE_KEY"):
         print("[aevo-mcp] AEVO_ACCOUNT_PRIVATE_KEY is deprecated, use AEVO_WALLET_PRIVATE_KEY", file=sys.stderr)
 
     return AevoMcpConfig(
