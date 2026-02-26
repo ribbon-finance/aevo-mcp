@@ -14,15 +14,23 @@ def register_market_resources(
     funding_tool=None,
     statistics_tool=None,
 ) -> dict[str, Callable]:
-    @mcp.resource("aevo://status")
+    @mcp.resource(
+        "aevo://status", description="AEVO MCP server status and identity context", mime_type="application/json"
+    )
     def resource_status() -> str:
         return json.dumps(status_tool(), indent=2)
 
-    @mcp.resource("aevo://markets/summary")
+    @mcp.resource(
+        "aevo://markets/summary", description="Summary of all active AEVO markets", mime_type="application/json"
+    )
     def resource_markets_summary() -> str:
         return json.dumps(market_tool(), indent=2)
 
-    @mcp.resource("aevo://account/overview")
+    @mcp.resource(
+        "aevo://account/overview",
+        description="Account overview with balance and margin info",
+        mime_type="application/json",
+    )
     def resource_account_overview() -> str:
         return json.dumps(account_tool(), indent=2)
 
@@ -34,7 +42,11 @@ def register_market_resources(
 
     if funding_tool is not None:
 
-        @mcp.resource("aevo://funding/snapshot")
+        @mcp.resource(
+            "aevo://funding/snapshot",
+            description="Current funding rate snapshot for ETH-PERP",
+            mime_type="application/json",
+        )
         def resource_funding_snapshot() -> str:
             return json.dumps(funding_tool("ETH-PERP"), indent=2)
 
@@ -42,7 +54,11 @@ def register_market_resources(
 
     if statistics_tool is not None:
 
-        @mcp.resource("aevo://statistics/snapshot")
+        @mcp.resource(
+            "aevo://statistics/snapshot",
+            description="Exchange-wide market statistics snapshot",
+            mime_type="application/json",
+        )
         def resource_statistics_snapshot() -> str:
             return json.dumps(statistics_tool(), indent=2)
 

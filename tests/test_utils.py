@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from types import SimpleNamespace
 
-from mcp_aevo_server.utils import err_response, ok_response, parse_int_field, resolve_wallet_address
+import pytest
+
+from mcp_aevo_server.utils import err_response, ok_response, parse_int_field, pick, resolve_auth, resolve_wallet_address
 
 
 def test_ok_response_payload():
@@ -47,3 +49,42 @@ def test_resolve_wallet_address_missing_raises():
         raise AssertionError("expected RuntimeError")
     except RuntimeError:
         pass
+
+
+def test_pick_whitelists_fields():
+    d = {"a": 1, "b": 2, "c": 3}
+    assert pick(d, ["a", "c"]) == {"a": 1, "c": 3}
+
+
+def test_pick_missing_keys():
+    d = {"a": 1}
+    assert pick(d, ["a", "b"]) == {"a": 1}
+
+
+def test_pick_empty():
+    assert pick({}, ["a"]) == {}
+
+
+def test_resolve_auth_both_provided():
+    result = resolve_auth(api_key="k", api_secret="s")
+    assert result == ("k", "s")
+
+
+def test_resolve_auth_session_fallback():
+    result = resolve_auth(session_api_key="sk", session_api_secret="ss")
+    assert result == ("sk", "ss")
+
+
+def test_resolve_auth_none_when_empty():
+    result = resolve_auth()
+    assert result is None
+
+
+def test_resolve_auth_partial_raises():
+    with pytest.raises(RuntimeError, match="must be provided together"):
+        resolve_auth(api_key="k")
+
+
+def test_resolve_auth_explicit_overrides_session():
+    result = resolve_auth(api_key="k", api_secret="s", session_api_key="sk", session_api_secret="ss")
+    assert result == ("k", "s")

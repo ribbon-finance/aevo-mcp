@@ -27,7 +27,8 @@ def test_prompts_can_be_registered_and_return_text():
     assert "Time in force: IOC" in trade_output
     assert "Post-only: True" in trade_output
     assert "Reduce-only: False" in trade_output
-    assert "2) Snapshot orderbook + account + positions." in trade_output
+    assert "aevo_update_leverage" in trade_output
+    assert "3) Snapshot orderbook + account + positions." in trade_output
     assert "Pre-trade checklist" in prompts["risk_checklist"]()
 
 
@@ -40,8 +41,8 @@ def test_cancel_plan_prompt_is_specific():
 
     assert "Order id: N/A" in no_id
     assert "Order id: order-123" in with_id
-    assert "1) If order id known, call `cancel_order(order_id)`." in no_id
-    assert "3) For batch operations use `cancel_orders` or `cancel_all`." in no_id
+    assert "1) If order id known, call `aevo_cancel_order(order_id)`." in no_id
+    assert "3) For batch operations use `aevo_cancel_orders` or `aevo_cancel_all_orders`." in no_id
 
 
 def test_onboarding_plan_prompt_contains_bootstrap_flow():
@@ -50,9 +51,16 @@ def test_onboarding_plan_prompt_contains_bootstrap_flow():
 
     plan = prompts["onboarding_plan"]()
     assert "AEVO AGENT ONBOARDING" in plan
-    assert "Fill required key fields" in plan
-    assert "Run `status` to confirm identities and transport." in plan
-    assert "Inspect `assets` and `markets`." in plan
+    assert "aevo_onboard" in plan
+    assert "api_key" in plan
+    assert "api_secret" in plan
+    assert "wallet_address" in plan
+    assert "signing_key_private_key" in plan
+    assert "aevo_authenticate" in plan
+    assert "can_trade" in plan
+    assert "aevo_list_assets" in plan
+    assert "aevo_list_markets" in plan
+    assert "https://app.aevo.xyz/settings" in plan
 
 
 def test_market_analysis_prompt():
@@ -63,12 +71,12 @@ def test_market_analysis_prompt():
     assert "AEVO MARKET ANALYSIS" in output
     assert "Symbol: ETH-PERP" in output
     assert "Asset: ETH" in output
-    assert "index_price" in output
-    assert "funding_rate" in output
-    assert "funding_history" in output
-    assert "statistics" in output
-    assert "trade_history" in output
-    assert "mark_history" in output
+    assert "aevo_get_index_price" in output
+    assert "aevo_get_funding_rate" in output
+    assert "aevo_get_funding_history" in output
+    assert "aevo_get_statistics" in output
+    assert "aevo_get_trade_history" in output
+    assert "aevo_get_mark_history" in output
 
     custom = prompts["market_analysis"](symbol="BTC-PERP", asset="BTC")
     assert "Symbol: BTC-PERP" in custom
@@ -79,13 +87,13 @@ def test_resources_can_be_registered_and_serialized():
     mcp = FastMCP("AEVO")
 
     def status_tool():
-        return {"ok": True, "result": {"environment": "mainnet"}}
+        return {"environment": "mainnet"}
 
     def market_tool():
-        return {"ok": True, "result": [{"instrument_name": "BTC-USDC"}]}
+        return [{"instrument_name": "BTC-USDC"}]
 
     def account_tool():
-        return {"ok": True, "result": {"account": "ok"}}
+        return {"account": "ok"}
 
     resources = register_market_resources(
         mcp, status_tool=status_tool, market_tool=market_tool, account_tool=account_tool
@@ -95,9 +103,9 @@ def test_resources_can_be_registered_and_serialized():
     markets = json.loads(resources["resource_markets_summary"]())
     account = json.loads(resources["resource_account_overview"]())
 
-    assert status == {"ok": True, "result": {"environment": "mainnet"}}
-    assert markets == {"ok": True, "result": [{"instrument_name": "BTC-USDC"}]}
-    assert account == {"ok": True, "result": {"account": "ok"}}
+    assert status == {"environment": "mainnet"}
+    assert markets == [{"instrument_name": "BTC-USDC"}]
+    assert account == {"account": "ok"}
 
 
 def test_funding_resource():
@@ -107,7 +115,7 @@ def test_funding_resource():
 
     def funding_tool(instrument_name):
         calls.append(instrument_name)
-        return {"ok": True, "result": {"funding_rate": "0.0001"}}
+        return {"funding_rate": "0.0001"}
 
     resources = register_market_resources(
         mcp,
@@ -118,7 +126,7 @@ def test_funding_resource():
     )
 
     result = json.loads(resources["resource_funding_snapshot"]())
-    assert result["result"]["funding_rate"] == "0.0001"
+    assert result["funding_rate"] == "0.0001"
     assert calls == ["ETH-PERP"]
 
 
@@ -126,7 +134,7 @@ def test_statistics_resource():
     mcp = FastMCP("AEVO")
 
     def statistics_tool():
-        return {"ok": True, "result": {"daily_volume": "1000000"}}
+        return {"daily_volume": "1000000"}
 
     resources = register_market_resources(
         mcp,
@@ -137,7 +145,7 @@ def test_statistics_resource():
     )
 
     result = json.loads(resources["resource_statistics_snapshot"]())
-    assert result["result"]["daily_volume"] == "1000000"
+    assert result["daily_volume"] == "1000000"
 
 
 def test_resources_backward_compatible_without_new_kwargs():
@@ -213,7 +221,7 @@ def test_options_straddle_prompt():
     assert "70000" in output
     assert "Max Loss" in output
     assert "Breakeven" in output
-    assert "create_order" in output
+    assert "aevo_create_order" in output
 
 
 def test_options_iron_condor_prompt():

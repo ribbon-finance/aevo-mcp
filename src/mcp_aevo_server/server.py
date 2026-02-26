@@ -3,30 +3,33 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from contextlib import asynccontextmanager
 
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 
 from .client import AevoAPIClient, AevoApiError
 from .config import AevoConfigError, AevoMcpConfig, load_config
 from .prompts import register_options_prompts, register_prompts
 from .resources import register_market_resources
+from .session_auth import SessionAuthStore
 from .tools.account import register_account_tools
 from .tools.market import register_market_tools
 from .tools.order import register_order_tools
 from .tools.register import register_registration_tools
-from .utils import err_response, ok_response
 
 
 def _run_auto_register(config: AevoMcpConfig, register_fn):
     if not config.auto_register:
         return None
     if config.api_key and config.api_secret:
-        return ok_response("auto-register skipped because AEVO_API_KEY/AEVO_API_SECRET are already set")
+        return {"ok": True, "result": "auto-register skipped because AEVO_API_KEY/AEVO_API_SECRET are already set"}
     if not config.wallet_private_key or not config.signing_key_private_key:
-        return err_response(
-            "auto-register skipped",
-            "missing AEVO_WALLET_PRIVATE_KEY or AEVO_SIGNING_KEY_PRIVATE_KEY",
-        )
+        return {
+            "ok": False,
+            "error": "auto-register skipped",
+            "details": "missing AEVO_WALLET_PRIVATE_KEY or AEVO_SIGNING_KEY_PRIVATE_KEY",
+        }
 
     return register_fn()
 
@@ -35,12 +38,34 @@ def _build_server(
     config: AevoMcpConfig, host: str = "127.0.0.1", port: int = 8080, path: str = "/mcp"
 ) -> tuple[FastMCP, object]:
     client = AevoAPIClient(config)
-    mcp = FastMCP("AEVO Trading", host=host, port=port, streamable_http_path=path)
+    auth_store = SessionAuthStore()
+
+    @asynccontextmanager
+    async def lifespan(server):
+        try:
+            yield
+        finally:
+            await client.close()
+
+    mcp = FastMCP(
+        "aevo_mcp",
+        host=host,
+        port=port,
+        streamable_http_path=path,
+        lifespan=lifespan,
+        instructions=(
+            "Start every session by calling aevo_onboard. "
+            "It checks if credentials are already present and tells you what to do next. "
+            "If credentials are missing, ask the user for them "
+            "(available at https://app.aevo.xyz/settings) "
+            "and call aevo_authenticate."
+        ),
+    )
 
     market_tools = register_market_tools(mcp, client)
-    account_tools = register_account_tools(mcp, client, config)
-    register_order_tools(mcp, client, config)
-    registration_tools = register_registration_tools(mcp, client, config)
+    account_tools = register_account_tools(mcp, client, config, auth_store=auth_store)
+    register_order_tools(mcp, client, config, auth_store=auth_store)
+    registration_tools = register_registration_tools(mcp, client, config, auth_store=auth_store)
 
     register_prompts(mcp)
     register_options_prompts(mcp)
@@ -53,23 +78,27 @@ def _build_server(
         statistics_tool=market_tools["statistics"],
     )
 
-    # keep a named local for compatibility with auto-register bootstrap
     register_fn = registration_tools["register_account"]
 
-    # This keeps startup behavior in sync with old public surface for diagnostics and smoke flows.
-    @mcp.tool()
-    def ping() -> dict:
-        return ok_response({"status": "ok", "transport": config.mcp_transport})
+    @mcp.tool(
+        name="aevo_ping",
+        annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False),
+    )
+    async def ping() -> dict:
+        """Check that the AEVO MCP server is running and responsive."""
+        return {"status": "ok", "transport": config.mcp_transport}
 
-    @mcp.tool()
-    def healthcheck() -> dict:
+    @mcp.tool(
+        name="aevo_healthcheck",
+        annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=True),
+    )
+    async def healthcheck() -> dict:
+        """Verify connectivity to the AEVO API by fetching market data."""
         try:
-            client.get_markets(asset="", instrument_type="", use_cache=False)
-            return ok_response({"api_access": "ok", "api_base_url": config.api_base_url})
+            await client.get_markets(asset="", instrument_type="", use_cache=False)
+            return {"api_access": "ok", "api_base_url": config.api_base_url}
         except AevoApiError as exc:
-            return err_response("healthcheck failed", str(exc))
-        except Exception as exc:
-            return err_response("healthcheck failed", str(exc))
+            raise RuntimeError(f"healthcheck failed: {exc}") from exc
 
     return mcp, register_fn
 
