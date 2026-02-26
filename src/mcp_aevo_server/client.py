@@ -199,9 +199,7 @@ class AevoAPIClient:
     async def get_instrument(self, instrument_name: str) -> Any:
         return await self._request("GET", f"/instrument/{instrument_name}")
 
-    async def update_leverage(
-        self, instrument_id: int, leverage: int, auth: AuthPair | None = None
-    ) -> Any:
+    async def update_leverage(self, instrument_id: int, leverage: int, auth: AuthPair | None = None) -> Any:
         return await self._request(
             "POST",
             "/account/leverage",

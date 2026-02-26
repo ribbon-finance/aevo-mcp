@@ -106,9 +106,7 @@ def register_account_tools(
 
     @mcp.tool(
         name="aevo_onboard",
-        annotations=ToolAnnotations(
-            readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False
-        ),
+        annotations=ToolAnnotations(readOnlyHint=True, destructiveHint=False, idempotentHint=True, openWorldHint=False),
     )
     async def onboard(ctx: Context | None = None) -> dict:
         """Start or resume an AEVO session. Call this at the beginning of every session.
@@ -254,9 +252,7 @@ def register_account_tools(
         )
         if creds is None:
             raise RuntimeError("failed to resolve session identity")
-        can_trade = creds.has_signing_credentials and bool(
-            creds.wallet_address or creds.wallet_private_key
-        )
+        can_trade = creds.has_signing_credentials and bool(creds.wallet_address or creds.wallet_private_key)
         result: dict = {
             "stored": True,
             "session_authenticated": creds.has_api_credentials,
@@ -272,8 +268,7 @@ def register_account_tools(
                 missing.append("signing_key_private_key")
             result["missing_for_trading"] = missing
             result["hint"] = (
-                "Call aevo_authenticate again with the missing fields to enable "
-                "order creation and cancellation."
+                "Call aevo_authenticate again with the missing fields to enable order creation and cancellation."
             )
         return result
 
@@ -366,9 +361,7 @@ def register_account_tools(
 
     @mcp.tool(
         name="aevo_update_leverage",
-        annotations=ToolAnnotations(
-            readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=True
-        ),
+        annotations=ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=True),
     )
     async def update_leverage(
         instrument_name: str,
@@ -396,9 +389,7 @@ def register_account_tools(
         instrument_id = await client.resolve_instrument_id(instrument_name)
         if not instrument_id:
             raise RuntimeError(f"instrument not found: {instrument_name}")
-        return await client.update_leverage(
-            instrument_id=int(instrument_id), leverage=leverage, auth=auth
-        )
+        return await client.update_leverage(instrument_id=int(instrument_id), leverage=leverage, auth=auth)
 
     @mcp.tool(
         name="aevo_get_trade_fills",
