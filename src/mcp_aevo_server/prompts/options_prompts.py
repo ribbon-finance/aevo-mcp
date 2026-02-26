@@ -6,7 +6,7 @@ from mcp.server.fastmcp import FastMCP
 
 
 def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
-    @mcp.prompt()
+    @mcp.prompt(description="Select an options strategy based on market outlook and volatility view.")
     def options_strategy_selector(
         asset: str = "ETH",
         outlook: str = "neutral",
@@ -71,10 +71,10 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             f"Volatility view: {volatility_view}\n\n"
             f"{strategies}\n"
             "Data-gathering sequence:\n"
-            f"1) Fetch spot price via `index_price(asset='{asset}')`.\n"
-            f"2) Fetch available expiries via `expiries(asset='{asset}')`.\n"
-            f"3) Fetch options chain via `markets(asset='{asset}', instrument_type='OPTION')`.\n"
-            "4) Present the above strategies with live premium estimates from `orderbook`.\n"
+            f"1) Fetch spot price via `aevo_get_index_price(asset='{asset}')`.\n"
+            f"2) Fetch available expiries via `aevo_get_expiries(asset='{asset}')`.\n"
+            f"3) Fetch options chain via `aevo_list_markets(asset='{asset}', instrument_type='OPTION')`.\n"
+            "4) Present the above strategies with live premium estimates from `aevo_get_orderbook`.\n"
             "5) Ask user to select a strategy, then use the matching prompt:\n"
             "   - `options_straddle`, `options_strangle`, `options_bull_call_spread`,\n"
             "     `options_bear_put_spread`, `options_iron_condor`, `options_butterfly`.\n\n"
@@ -82,7 +82,7 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "  Example: ETH-28MAR25-3000-C, BTC-28MAR25-70000-P\n"
         )
 
-    @mcp.prompt()
+    @mcp.prompt(description="Execute a long straddle options strategy on AEVO.")
     def options_straddle(
         asset: str = "ETH",
         expiry: str = "",
@@ -94,8 +94,8 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "STRUCTURE: Buy 1 Call + Buy 1 Put at SAME strike and expiry.\n"
             "BIAS: Direction-neutral, profits from large price move either way.\n\n"
             "Data gathering:\n"
-            f"1) Fetch spot: `index_price(asset='{asset}')`.\n"
-            f"2) Fetch expiries: `expiries(asset='{asset}')`.\n"
+            f"1) Fetch spot: `aevo_get_index_price(asset='{asset}')`.\n"
+            f"2) Fetch expiries: `aevo_get_expiries(asset='{asset}')`.\n"
             f"3) If no strike given, pick ATM (closest to spot price).\n"
             f"4) Construct instrument names:\n"
             f"   Call: {asset}-{{expiry}}-{{strike}}-C\n"
@@ -113,13 +113,13 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "  This position loses money daily (theta) but profits from volatility spikes (vega).\n\n"
             "EXECUTION:\n"
             "1) Review risk numbers with user. Confirm they accept max loss.\n"
-            f"2) `create_order(instrument='{asset}-{{expiry}}-{{strike}}-C', is_buy=True, amount='1', limit_price='{{call_premium}}')`\n"
-            f"3) `create_order(instrument='{asset}-{{expiry}}-{{strike}}-P', is_buy=True, amount='1', limit_price='{{put_premium}}')`\n"
-            "4) Verify both fills via `list_orders` and `positions`.\n"
-            "5) Monitor via `portfolio` for Greeks.\n"
+            f"2) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{strike}}-C', is_buy=True, amount='1', limit_price='{{call_premium}}')`\n"
+            f"3) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{strike}}-P', is_buy=True, amount='1', limit_price='{{put_premium}}')`\n"
+            "4) Verify both fills via `aevo_list_orders` and `aevo_get_positions`.\n"
+            "5) Monitor via `aevo_get_portfolio` for Greeks.\n"
         )
 
-    @mcp.prompt()
+    @mcp.prompt(description="Execute a long strangle options strategy on AEVO.")
     def options_strangle(
         asset: str = "ETH",
         expiry: str = "",
@@ -133,8 +133,8 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "STRUCTURE: Buy 1 OTM Call + Buy 1 OTM Put (different strikes, same expiry).\n"
             "BIAS: Direction-neutral, cheaper than straddle but needs larger move.\n\n"
             "Data gathering:\n"
-            f"1) Fetch spot: `index_price(asset='{asset}')`.\n"
-            f"2) Fetch expiries: `expiries(asset='{asset}')`.\n"
+            f"1) Fetch spot: `aevo_get_index_price(asset='{asset}')`.\n"
+            f"2) Fetch expiries: `aevo_get_expiries(asset='{asset}')`.\n"
             "3) If no strikes given, pick ~5-10% OTM on each side of spot.\n"
             f"4) Construct instrument names:\n"
             f"   Call: {asset}-{{expiry}}-{{call_strike}}-C\n"
@@ -149,12 +149,12 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "GREEK PROFILE: ~0 Delta, +Gamma, -Theta, +Vega\n\n"
             "EXECUTION:\n"
             "1) Review risk numbers with user.\n"
-            f"2) `create_order(instrument='{asset}-{{expiry}}-{{call_strike}}-C', is_buy=True, amount='1', limit_price='{{call_premium}}')`\n"
-            f"3) `create_order(instrument='{asset}-{{expiry}}-{{put_strike}}-P', is_buy=True, amount='1', limit_price='{{put_premium}}')`\n"
+            f"2) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{call_strike}}-C', is_buy=True, amount='1', limit_price='{{call_premium}}')`\n"
+            f"3) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{put_strike}}-P', is_buy=True, amount='1', limit_price='{{put_premium}}')`\n"
             "4) Verify fills and monitor Greeks.\n"
         )
 
-    @mcp.prompt()
+    @mcp.prompt(description="Execute a bull call spread options strategy on AEVO.")
     def options_bull_call_spread(
         asset: str = "ETH",
         expiry: str = "",
@@ -168,8 +168,8 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "STRUCTURE: Buy 1 Call at lower strike + Sell 1 Call at upper strike.\n"
             "BIAS: Moderately bullish with capped risk and reward.\n\n"
             "Data gathering:\n"
-            f"1) Fetch spot: `index_price(asset='{asset}')`.\n"
-            f"2) Fetch expiries and chain: `markets(asset='{asset}', instrument_type='OPTION')`.\n"
+            f"1) Fetch spot: `aevo_get_index_price(asset='{asset}')`.\n"
+            f"2) Fetch expiries and chain: `aevo_list_markets(asset='{asset}', instrument_type='OPTION')`.\n"
             "3) Select two call strikes (lower near ATM, upper OTM).\n"
             f"4) Instruments:\n"
             f"   Long:  {asset}-{{expiry}}-{{lower_strike}}-C (BUY)\n"
@@ -183,12 +183,12 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "GREEK PROFILE: +Delta (moderate), mild -Theta, mild +Vega\n\n"
             "EXECUTION:\n"
             "1) Review risk/reward with user.\n"
-            f"2) `create_order(instrument='{asset}-{{expiry}}-{{lower_strike}}-C', is_buy=True, amount='1', limit_price='{{long_premium}}')`\n"
-            f"3) `create_order(instrument='{asset}-{{expiry}}-{{upper_strike}}-C', is_buy=False, amount='1', limit_price='{{short_premium}}')`\n"
+            f"2) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{lower_strike}}-C', is_buy=True, amount='1', limit_price='{{long_premium}}')`\n"
+            f"3) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{upper_strike}}-C', is_buy=False, amount='1', limit_price='{{short_premium}}')`\n"
             "4) Verify fills and monitor position.\n"
         )
 
-    @mcp.prompt()
+    @mcp.prompt(description="Execute a bear put spread options strategy on AEVO.")
     def options_bear_put_spread(
         asset: str = "ETH",
         expiry: str = "",
@@ -202,8 +202,8 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "STRUCTURE: Buy 1 Put at upper strike + Sell 1 Put at lower strike.\n"
             "BIAS: Moderately bearish with capped risk and reward.\n\n"
             "Data gathering:\n"
-            f"1) Fetch spot: `index_price(asset='{asset}')`.\n"
-            f"2) Fetch expiries and chain: `markets(asset='{asset}', instrument_type='OPTION')`.\n"
+            f"1) Fetch spot: `aevo_get_index_price(asset='{asset}')`.\n"
+            f"2) Fetch expiries and chain: `aevo_list_markets(asset='{asset}', instrument_type='OPTION')`.\n"
             "3) Select two put strikes (upper near ATM, lower OTM).\n"
             f"4) Instruments:\n"
             f"   Long:  {asset}-{{expiry}}-{{upper_strike}}-P (BUY)\n"
@@ -217,12 +217,12 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "GREEK PROFILE: -Delta (moderate), mild -Theta, mild +Vega\n\n"
             "EXECUTION:\n"
             "1) Review risk/reward with user.\n"
-            f"2) `create_order(instrument='{asset}-{{expiry}}-{{upper_strike}}-P', is_buy=True, amount='1', limit_price='{{long_premium}}')`\n"
-            f"3) `create_order(instrument='{asset}-{{expiry}}-{{lower_strike}}-P', is_buy=False, amount='1', limit_price='{{short_premium}}')`\n"
+            f"2) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{upper_strike}}-P', is_buy=True, amount='1', limit_price='{{long_premium}}')`\n"
+            f"3) `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{lower_strike}}-P', is_buy=False, amount='1', limit_price='{{short_premium}}')`\n"
             "4) Verify fills and monitor position.\n"
         )
 
-    @mcp.prompt()
+    @mcp.prompt(description="Execute an iron condor options strategy on AEVO.")
     def options_iron_condor(
         asset: str = "ETH",
         expiry: str = "",
@@ -239,8 +239,8 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "STRUCTURE: 4 legs — Buy OTM Put, Sell Put, Sell Call, Buy OTM Call.\n"
             "BIAS: Neutral, profits from price staying in range (low volatility).\n\n"
             "Data gathering:\n"
-            f"1) Fetch spot: `index_price(asset='{asset}')`.\n"
-            f"2) Fetch expiries and chain: `markets(asset='{asset}', instrument_type='OPTION')`.\n"
+            f"1) Fetch spot: `aevo_get_index_price(asset='{asset}')`.\n"
+            f"2) Fetch expiries and chain: `aevo_list_markets(asset='{asset}', instrument_type='OPTION')`.\n"
             "3) Select 4 strikes: 2 puts below spot, 2 calls above spot.\n"
             "   Tip: equal wing widths (e.g. 5% apart) for symmetric risk.\n"
             f"4) Instruments (ordered by strike):\n"
@@ -262,15 +262,15 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "EXECUTION:\n"
             "1) Review risk numbers with user. Confirm max loss is acceptable.\n"
             "2) Execute all 4 legs:\n"
-            f"   `create_order(instrument='{asset}-{{expiry}}-{{put_buy_strike}}-P', is_buy=True, amount='1', limit_price='...')`\n"
-            f"   `create_order(instrument='{asset}-{{expiry}}-{{put_sell_strike}}-P', is_buy=False, amount='1', limit_price='...')`\n"
-            f"   `create_order(instrument='{asset}-{{expiry}}-{{call_sell_strike}}-C', is_buy=False, amount='1', limit_price='...')`\n"
-            f"   `create_order(instrument='{asset}-{{expiry}}-{{call_buy_strike}}-C', is_buy=True, amount='1', limit_price='...')`\n"
+            f"   `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{put_buy_strike}}-P', is_buy=True, amount='1', limit_price='...')`\n"
+            f"   `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{put_sell_strike}}-P', is_buy=False, amount='1', limit_price='...')`\n"
+            f"   `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{call_sell_strike}}-C', is_buy=False, amount='1', limit_price='...')`\n"
+            f"   `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{call_buy_strike}}-C', is_buy=True, amount='1', limit_price='...')`\n"
             "3) Verify all fills. If partial, consider closing unfilled legs.\n"
-            "4) Monitor via `positions` and `portfolio` for Greeks.\n"
+            "4) Monitor via `aevo_get_positions` and `aevo_get_portfolio` for Greeks.\n"
         )
 
-    @mcp.prompt()
+    @mcp.prompt(description="Execute a butterfly spread options strategy on AEVO.")
     def options_butterfly(
         asset: str = "ETH",
         expiry: str = "",
@@ -286,8 +286,8 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "  Strikes must be equidistant: middle - lower = upper - middle.\n"
             "BIAS: Neutral, profits if price pins near middle strike at expiry.\n\n"
             "Data gathering:\n"
-            f"1) Fetch spot: `index_price(asset='{asset}')`.\n"
-            f"2) Fetch expiries and chain: `markets(asset='{asset}', instrument_type='OPTION')`.\n"
+            f"1) Fetch spot: `aevo_get_index_price(asset='{asset}')`.\n"
+            f"2) Fetch expiries and chain: `aevo_list_markets(asset='{asset}', instrument_type='OPTION')`.\n"
             "3) If no strikes given, pick middle = ATM, then lower/upper equidistant.\n"
             "   Tip: use available strike spacing from the options chain.\n"
             f"4) Instruments:\n"
@@ -307,11 +307,11 @@ def register_options_prompts(mcp: FastMCP) -> dict[str, Callable]:
             "EXECUTION:\n"
             "1) Review risk numbers with user.\n"
             "2) Execute all 3 legs:\n"
-            f"   `create_order(instrument='{asset}-{{expiry}}-{{lower_strike}}-C', is_buy=True, amount='1', limit_price='...')`\n"
-            f"   `create_order(instrument='{asset}-{{expiry}}-{{middle_strike}}-C', is_buy=False, amount='2', limit_price='...')`\n"
-            f"   `create_order(instrument='{asset}-{{expiry}}-{{upper_strike}}-C', is_buy=True, amount='1', limit_price='...')`\n"
+            f"   `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{lower_strike}}-C', is_buy=True, amount='1', limit_price='...')`\n"
+            f"   `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{middle_strike}}-C', is_buy=False, amount='2', limit_price='...')`\n"
+            f"   `aevo_create_order(instrument_name='{asset}-{{expiry}}-{{upper_strike}}-C', is_buy=True, amount='1', limit_price='...')`\n"
             "3) Verify all fills.\n"
-            "4) Monitor via `positions` and `portfolio`.\n"
+            "4) Monitor via `aevo_get_positions` and `aevo_get_portfolio`.\n"
         )
 
     return {

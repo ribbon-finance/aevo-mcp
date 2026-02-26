@@ -12,18 +12,22 @@ def test_build_server_registers_tools_and_components(monkeypatch):
             self.config = config
             self.has_credentials = False
 
-        def get_markets(self, *args, **kwargs):
+        async def get_markets(self, *args, **kwargs):
             return []
 
+        async def close(self):
+            pass
+
     class CaptureServer:
-        def __init__(self, _name):
+        def __init__(self, _name, **kwargs):
             self.tools = []
             self.prompts = []
             self.resources = []
 
         def tool(self, *args, **kwargs):
             def decorator(func):
-                self.tools.append(func.__name__)
+                name = kwargs.get("name", func.__name__)
+                self.tools.append(name)
                 return func
 
             return decorator
@@ -86,7 +90,7 @@ def test_build_server_registers_tools_and_components(monkeypatch):
     }
     registration_tools = {"register_account": Mock(name="register_account", return_value={"ok": True})}
 
-    captured = CaptureServer("AEVO Trading")
+    captured = CaptureServer("aevo_mcp")
 
     monkeypatch.setattr(server, "AevoAPIClient", FakeClient)
     monkeypatch.setattr(server, "FastMCP", lambda name, **kwargs: captured)
@@ -111,7 +115,7 @@ def test_build_server_registers_tools_and_components(monkeypatch):
     mcp, register_fn = server._build_server(config)
 
     assert mcp is captured
-    assert set(captured.tools) == {"ping", "healthcheck"}
+    assert set(captured.tools) == {"aevo_ping", "aevo_healthcheck"}
     assert mock_prompt_reg.call_count == 1
     assert mock_prompt_reg.call_args.args == (captured,)
     assert mock_resource_reg.called
